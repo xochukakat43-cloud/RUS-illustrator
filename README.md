@@ -1,32 +1,82 @@
-# React + TypeScript + Vite
+# Vector Studio (Adobe Illustrator Web Analogue)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Современный веб-аналог Adobe Illustrator, написанный на **TypeScript**, **React**, **HTML5 Canvas** и движке векторной геометрии **Paper.js**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Быстрый запуск на другом ПК (через VS Code)
 
-## React Compiler
+### 1. Что должно быть установлено:
+* **[Node.js](https://nodejs.org/)** (рекомендуется версия LTS 18+ или 20+)
+* **[Git](https://git-scm.com/)**
+* **[VS Code](https://code.visualstudio.com/)**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+### 2. Пошаговые команды:
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+1. **Клонируйте репозиторий себе на компьютер:**
+   Откройте терминал (Command Prompt, PowerShell или Git Bash) и выполните:
+   ```bash
+   git clone https://github.com/xochukakat43-cloud/RUS-illustrator.git
+   ```
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+2. **Перейдите в папку проекта и откройте в VS Code:**
+   ```bash
+   cd RUS-illustrator
+   code .
+   ```
+   *(или в VS Code выберите **File** -> **Open Folder...** и укажите скачанную папку)*
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+3. **Откройте встроенный терминал в VS Code:**
+   * Нажмите сочетание клавиш **`Ctrl + ~`** (или в верхнем меню: **Terminal** -> **New Terminal**).
+
+4. **Установите зависимости:**
+   ```bash
+   npm install
+   ```
+
+5. **Запустите локальный сервер разработки:**
+   ```bash
+   npm run dev
+   ```
+
+6. **Откройте в браузере:**
+   В терминале появится ссылка:
+   👉 **http://localhost:5173/** (или зажмите `Ctrl` и кликните по ссылке в терминале).
+
+---
+
+## 🛠️ Если на Windows в PowerShell возникает ошибка политик выполнения (Execution Policy):
+Если PowerShell ругается на запуск скриптов (`npm : не удается загрузить файл...`):
+1. Либо используйте вызов команды напрямую:
+   ```cmd
+   npm.cmd install
+   npm.cmd run dev
+   ```
+2. Либо переключите терминал в VS Code на **Command Prompt (CMD)** или **Git Bash** (в выпадающем списке терминала справа сверху).
+
+---
+
+## 🎨 Возможности редактора:
+
+* **Инструменты рисования**:
+  * **Selection Tool (`V`)** — выбор объектов, Bounding Box (масштабирование и поворот), дублирование через `Alt + Drag`.
+  * **Direct Selection Tool (`A`)** — управление отдельными опорными узлами и рычагами Безье, сглаживание / острый угол.
+  * **Pen Tool (`P`)** — рисование кривых Безье кликом и перетаскиванием, замыкание контуров.
+  * **Фигуры** — Прямоугольник (`M`), Эллипс (`L`), Отрезок (`\`) с поддержкой `Shift` и `Alt`.
+  * **Навигация** — Рука (`H` / зажатый `Пробел`), Зум (`Z` / `Ctrl + Wheel`), вписать артборд (`Ctrl + 0`).
+* **Pathfinder (Булевы операции)**:
+  * Объединение (Unite)
+  * Вычитание (Minus Front)
+  * Пересечение (Intersect)
+  * Исключение (Exclude)
+* **Выравнивание (Align & Distribute)**:
+  * По выделению или по границам Артборда.
+  * Равномерное распределение интервалов.
+* **Слои и организация**:
+  * Иерархия слоев, скрытие (👁️), блокировка (🔒), Z-index (`Ctrl+[` / `Ctrl+]`), группировка (`Ctrl+G` / `Ctrl+Shift+G`).
+* **Экспорт и сохранение**:
+  * Автосохранение в `localStorage`.
+  * Сохранение и открытие файлов проекта `.ai.json`.
+  * Экспорт в чистый векторный `.svg` и растровый `.png` (1x, 2x Retina, 3x).
