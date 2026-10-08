@@ -173,7 +173,7 @@ export class LineTool extends Tool {
     this.currentItem = new paper.Path.Line({
       from: event.point,
       to: event.point,
-      strokeColor: style.strokeColor || '#ffffff',
+      strokeColor: style.strokeColor || '#000000',
       strokeWidth: style.strokeWidth || 2,
       strokeCap: style.strokeCap,
       opacity: style.opacity,
@@ -204,7 +204,7 @@ export class LineTool extends Tool {
     this.currentItem = new paper.Path.Line({
       from: this.startPoint,
       to: toPoint,
-      strokeColor: style.strokeColor || '#ffffff',
+      strokeColor: style.strokeColor || '#000000',
       strokeWidth: style.strokeWidth || 2,
       strokeCap: style.strokeCap,
       opacity: style.opacity,

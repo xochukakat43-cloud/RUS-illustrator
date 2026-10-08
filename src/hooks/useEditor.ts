@@ -88,19 +88,33 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     setGridConfigState(editor.getGridConfig());
     setIsReady(true);
 
+    const canvas = canvasRef.current;
     const handleResize = () => {
       if (canvasRef.current && editorRef.current) {
-        editorRef.current.resize(
-          canvasRef.current.clientWidth,
-          canvasRef.current.clientHeight
-        );
+        const parent = canvasRef.current.parentElement;
+        const width = parent?.clientWidth || canvasRef.current.clientWidth;
+        const height = parent?.clientHeight || canvasRef.current.clientHeight;
+        if (width > 0 && height > 0) {
+          editorRef.current.resize(width, height);
+        }
       }
     };
+
+    let ro: ResizeObserver | null = null;
+    if (canvas && canvas.parentElement) {
+      ro = new ResizeObserver(() => {
+        handleResize();
+      });
+      ro.observe(canvas.parentElement);
+    }
 
     window.addEventListener('resize', handleResize);
     handleResize();
 
     return () => {
+      if (ro) {
+        ro.disconnect();
+      }
       window.removeEventListener('resize', handleResize);
       editor.destroy();
     };

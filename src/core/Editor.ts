@@ -79,6 +79,10 @@ export class Editor {
   };
 
   private callbacks: EditorCallbacks = {};
+  private onWheelHandler: ((e: WheelEvent) => void) | null = null;
+  private onKeyDownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private onKeyUpHandler: ((e: KeyboardEvent) => void) | null = null;
+  private hasInitiallyFitted: boolean = false;
 
   constructor(canvas: HTMLCanvasElement, callbacks?: EditorCallbacks) {
     this.canvas = canvas;
@@ -581,29 +585,26 @@ export class Editor {
 
   private setupDOMEvents(): void {
     // Wheel zoom & pan
-    this.canvas.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault();
-        const rect = this.canvas.getBoundingClientRect();
-        const mousePoint = new this.scope.Point(e.clientX - rect.left, e.clientY - rect.top);
-        const projectPoint = this.viewport.screenToProject(mousePoint);
+    this.onWheelHandler = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = this.canvas.getBoundingClientRect();
+      const mousePoint = new this.scope.Point(e.clientX - rect.left, e.clientY - rect.top);
+      const projectPoint = this.viewport.screenToProject(mousePoint);
 
-        if (e.ctrlKey || e.metaKey) {
-          // Pinch or Ctrl + wheel = zoom
-          const factor = e.deltaY < 0 ? 1.15 : 0.85;
-          this.viewport.setZoom(this.viewport.getZoom() * factor, projectPoint);
-        } else {
-          // Regular wheel = pan
-          const delta = new this.scope.Point(e.deltaX, e.deltaY);
-          this.viewport.pan(delta.multiply(-1));
-        }
-      },
-      { passive: false }
-    );
+      if (e.ctrlKey || e.metaKey) {
+        // Pinch or Ctrl + wheel = zoom
+        const factor = e.deltaY < 0 ? 1.15 : 0.85;
+        this.viewport.setZoom(this.viewport.getZoom() * factor, projectPoint);
+      } else {
+        // Regular wheel = pan (screen delta)
+        const delta = new this.scope.Point(e.deltaX, e.deltaY);
+        this.viewport.pan(delta.multiply(-1), true);
+      }
+    };
+    this.canvas.addEventListener('wheel', this.onWheelHandler, { passive: false });
 
     // Global keyboard shortcuts (Illustrator layout)
-    window.addEventListener('keydown', (e: KeyboardEvent) => {
+    this.onKeyDownHandler = (e: KeyboardEvent) => {
       // Don't intercept when typing in input/textarea
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tag === 'input' || tag === 'textarea') return;
@@ -729,23 +730,55 @@ export class Editor {
             break;
         }
       }
-    });
+    };
+    if (this.onKeyDownHandler) {
+      window.addEventListener('keydown', this.onKeyDownHandler);
+    }
 
-    window.addEventListener('keyup', (e: KeyboardEvent) => {
+    this.onKeyUpHandler = (e: KeyboardEvent) => {
       if (e.code === 'Space' && this.isSpacePanning) {
         this.isSpacePanning = false;
         this.setTool(this.previousToolType);
       }
-    });
+    };
+    window.addEventListener('keyup', this.onKeyUpHandler);
   }
 
   public resize(width: number, height: number): void {
+    if (width <= 0 || height <= 0) return;
+
     this.scope.view.viewSize = new this.scope.Size(width, height);
     this.renderArtboard();
     this.renderOverlay();
+
+    if (!this.hasInitiallyFitted && width > 100 && height > 100) {
+      this.hasInitiallyFitted = true;
+      this.viewport.fitArtboard();
+    }
   }
 
   public destroy(): void {
-    // Cleanup if needed
+    if (this.onWheelHandler) {
+      this.canvas.removeEventListener('wheel', this.onWheelHandler);
+      this.onWheelHandler = null;
+    }
+    if (this.onKeyDownHandler) {
+      window.removeEventListener('keydown', this.onKeyDownHandler);
+      this.onKeyDownHandler = null;
+    }
+    if (this.onKeyUpHandler) {
+      window.removeEventListener('keyup', this.onKeyUpHandler);
+      this.onKeyUpHandler = null;
+    }
+
+    this.tools.forEach((tool) => tool.deactivate());
+    this.tools.clear();
+
+    try {
+      this.scope.project?.clear();
+      this.scope.project?.remove();
+    } catch {
+      // ignore
+    }
   }
 }

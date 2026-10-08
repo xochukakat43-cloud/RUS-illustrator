@@ -67,12 +67,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   }, [canvasRef, viewport]);
 
   return (
-    <div className="relative flex-1 flex flex-col h-full overflow-hidden bg-ai-darkest">
+    <div className="relative flex-1 flex flex-col h-full overflow-hidden bg-ai-darkest select-none">
       {/* Canvas container */}
-      <div className="relative flex-1 w-full h-full overflow-hidden">
+      <div className="relative flex-1 w-full h-full overflow-hidden select-none">
         <canvas
           ref={canvasRef}
-          className="w-full h-full block focus:outline-none"
+          className="w-full h-full block focus:outline-none select-none"
           tabIndex={0}
         />
       </div>

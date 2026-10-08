@@ -46,8 +46,9 @@ export class Viewport {
     this.notifyChange();
   }
 
-  public pan(delta: paper.Point): void {
-    this.scope.view.center = this.scope.view.center.subtract(delta.divide(this.scope.view.zoom));
+  public pan(delta: paper.Point, isScreenDelta: boolean = true): void {
+    const projectDelta = isScreenDelta ? delta.divide(this.scope.view.zoom) : delta;
+    this.scope.view.center = this.scope.view.center.subtract(projectDelta);
     this.notifyChange();
   }
 

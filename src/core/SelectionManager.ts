@@ -15,14 +15,29 @@ export class SelectionManager {
     const mainLayer = this.editor.getMainLayer();
     if (!mainLayer) return [];
 
-    // Filter items in mainLayer that are selected and not helper guides
-    return mainLayer.getItems({
+    // Filter items in mainLayer that are selected and not the layer itself
+    const items = mainLayer.getItems({
       selected: true,
-      match: (item: paper.Item) => item.parent === mainLayer || item.parent instanceof paper.Group
+      match: (item: paper.Item) => item !== mainLayer && !(item instanceof paper.Layer),
+    });
+
+    // Exclude items whose ancestor is already selected to avoid double transforms
+    return items.filter((item) => {
+      let p = item.parent;
+      while (p && p !== mainLayer) {
+        if (p.selected) return false;
+        p = p.parent;
+      }
+      return true;
     });
   }
 
   public clearSelection(): void {
+    const mainLayer = this.editor.getMainLayer();
+    if (mainLayer) {
+      mainLayer.selected = false;
+    }
+
     const items = this.getSelectedItems();
     items.forEach((item) => {
       item.selected = false;
@@ -36,6 +51,8 @@ export class SelectionManager {
   }
 
   public selectItem(item: paper.Item, additive: boolean = false): void {
+    if (!item || item instanceof paper.Layer) return;
+
     if (!additive) {
       this.clearSelection();
     }
@@ -225,8 +242,7 @@ export class SelectionManager {
       // Scale relative to current bounds top-left
       const relOrigin = currentBounds.topLeft;
       item.scale(scaleX, scaleY, relOrigin);
-      item.position.x += dx;
-      item.position.y += dy;
+      item.position = item.position.add(new paper.Point(dx, dy));
     });
 
     this.updateSelection();

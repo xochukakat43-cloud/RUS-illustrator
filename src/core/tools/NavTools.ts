@@ -7,7 +7,7 @@ export class PanTool extends Tool {
   public readonly cursor: string = 'grab';
 
   public override onMouseDrag(event: paper.ToolEvent): void {
-    this.editor.viewport.pan(event.delta);
+    this.editor.viewport.pan(event.delta, false);
   }
 }
 

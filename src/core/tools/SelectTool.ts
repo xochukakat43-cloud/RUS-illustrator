@@ -44,9 +44,18 @@ export class SelectTool extends Tool {
 
     if (hitResult && hitResult.item) {
       let targetItem = hitResult.item;
-      // If item is inside group, select highest group or item
-      while (targetItem.parent && targetItem.parent instanceof paper.Group) {
+      // If item is inside group, select highest group or item (NOT layer!)
+      while (
+        targetItem.parent &&
+        targetItem.parent instanceof paper.Group &&
+        !(targetItem.parent instanceof paper.Layer)
+      ) {
         targetItem = targetItem.parent;
+      }
+
+      // Ensure targetItem is not a layer
+      if (targetItem instanceof paper.Layer) {
+        return;
       }
 
       const isShift = event.modifiers.shift;
@@ -114,13 +123,15 @@ export class SelectTool extends Tool {
         this.marqueeBox.remove();
       }
 
+      const zoom = this.editor.viewport.getZoom();
       this.marqueeBox = new paper.Path.Rectangle({
         from: this.startPoint,
         to: event.point,
         strokeColor: new paper.Color('#0d99ff'),
-        strokeWidth: 1,
-        dashArray: [4, 4],
+        strokeWidth: 1 / zoom,
+        dashArray: [4 / zoom, 4 / zoom],
         fillColor: new paper.Color(13 / 255, 153 / 255, 255 / 255, 0.08),
+        insert: false,
       });
       this.editor.getOverlayLayer().addChild(this.marqueeBox);
 
@@ -133,7 +144,6 @@ export class SelectTool extends Tool {
           item.selected = false;
         }
       });
-      this.editor.selectionManager.updateSelection();
     } else if (this.mode === 'scale' && this.initialItemsBounds && this.activeHandle) {
       this.handleScale(event);
     } else if (this.mode === 'rotate') {
@@ -142,12 +152,16 @@ export class SelectTool extends Tool {
   }
 
   public override onMouseUp(event: paper.ToolEvent): void {
+    const prevMode = this.mode;
+
     if (this.marqueeBox) {
       this.marqueeBox.remove();
       this.marqueeBox = null;
     }
 
-    if (this.mode === 'move' || this.mode === 'scale' || this.mode === 'rotate') {
+    if (prevMode === 'marquee') {
+      this.editor.selectionManager.updateSelection();
+    } else if (prevMode === 'move' || prevMode === 'scale' || prevMode === 'rotate') {
       this.editor.history.pushState();
     }
 
@@ -195,59 +209,90 @@ export class SelectTool extends Tool {
 
   private handleScale(event: paper.ToolEvent): void {
     const selected = this.editor.selectionManager.getSelectedItems();
-    if (selected.length === 0 || !this.initialItemsBounds || !this.activeHandle) return;
+    if (selected.length === 0 || !this.activeHandle) return;
 
-    const b = this.initialItemsBounds;
-    let newBounds = b.clone();
+    const bounds = this.getUnionBounds(selected);
 
+    // Anchor opposite point based on active handle
+    let anchor: paper.Point;
     switch (this.activeHandle) {
       case 'br':
-        newBounds.bottom = event.point.y;
-        newBounds.right = event.point.x;
+        anchor = bounds.topLeft;
         break;
       case 'tl':
-        newBounds.top = event.point.y;
-        newBounds.left = event.point.x;
+        anchor = bounds.bottomRight;
         break;
       case 'tr':
-        newBounds.top = event.point.y;
-        newBounds.right = event.point.x;
+        anchor = bounds.bottomLeft;
         break;
       case 'bl':
-        newBounds.bottom = event.point.y;
-        newBounds.left = event.point.x;
+        anchor = bounds.topRight;
         break;
       case 'tc':
-        newBounds.top = event.point.y;
+        anchor = new paper.Point(bounds.center.x, bounds.bottom);
         break;
       case 'bc':
-        newBounds.bottom = event.point.y;
+        anchor = new paper.Point(bounds.center.x, bounds.top);
         break;
       case 'lc':
-        newBounds.left = event.point.x;
+        anchor = new paper.Point(bounds.right, bounds.center.y);
         break;
       case 'rc':
-        newBounds.right = event.point.x;
+        anchor = new paper.Point(bounds.left, bounds.center.y);
         break;
+      default:
+        anchor = bounds.center;
     }
 
-    if (Math.abs(newBounds.width) < 2 || Math.abs(newBounds.height) < 2) return;
+    const curDistX = event.point.x - anchor.x;
+    const prevDistX = event.lastPoint.x - anchor.x;
+    let sx = 1;
+    if (
+      this.activeHandle.includes('l') ||
+      this.activeHandle.includes('r') ||
+      this.activeHandle === 'bl' ||
+      this.activeHandle === 'br' ||
+      this.activeHandle === 'tl' ||
+      this.activeHandle === 'tr'
+    ) {
+      if (Math.abs(prevDistX) > 0.1 && Math.abs(curDistX) > 0.1 && Math.sign(curDistX) === Math.sign(prevDistX)) {
+        sx = curDistX / prevDistX;
+      }
+    }
 
-    const sx = newBounds.width / b.width;
-    const sy = newBounds.height / b.height;
+    const curDistY = event.point.y - anchor.y;
+    const prevDistY = event.lastPoint.y - anchor.y;
+    let sy = 1;
+    if (
+      this.activeHandle.includes('t') ||
+      this.activeHandle.includes('b') ||
+      this.activeHandle === 'bl' ||
+      this.activeHandle === 'br' ||
+      this.activeHandle === 'tl' ||
+      this.activeHandle === 'tr'
+    ) {
+      if (Math.abs(prevDistY) > 0.1 && Math.abs(curDistY) > 0.1 && Math.sign(curDistY) === Math.sign(prevDistY)) {
+        sy = curDistY / prevDistY;
+      }
+    }
 
-    // Anchor opposite point
-    let anchor = b.center;
-    if (this.activeHandle === 'br') anchor = b.topLeft;
-    else if (this.activeHandle === 'tl') anchor = b.bottomRight;
-    else if (this.activeHandle === 'tr') anchor = b.bottomLeft;
-    else if (this.activeHandle === 'bl') anchor = b.topRight;
+    if (
+      isNaN(sx) ||
+      isNaN(sy) ||
+      !isFinite(sx) ||
+      !isFinite(sy) ||
+      sx <= 0.05 ||
+      sy <= 0.05 ||
+      sx > 10 ||
+      sy > 10
+    ) {
+      return;
+    }
 
     selected.forEach((item) => {
       item.scale(sx, sy, anchor);
     });
 
-    this.initialItemsBounds = this.getUnionBounds(selected);
     this.editor.selectionManager.updateSelection();
   }
 
