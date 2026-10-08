@@ -16,6 +16,9 @@ import type { Tool } from './tools/Tool';
 import { SelectTool } from './tools/SelectTool';
 import { DirectSelectTool } from './tools/DirectSelectTool';
 import { PenTool } from './tools/PenTool';
+import { PencilTool } from './tools/PencilTool';
+import { TextTool } from './tools/TextTool';
+import { EyedropperTool } from './tools/EyedropperTool';
 import { EllipseTool, LineTool, RectangleTool } from './tools/ShapeTools';
 import { PanTool, ZoomTool } from './tools/NavTools';
 import { Pathfinder } from './operations/Pathfinder';
@@ -24,6 +27,7 @@ import { Arrangement } from './operations/Arrangement';
 import { Exporter } from './storage/Exporter';
 import { Serializer } from './storage/Serializer';
 import { LocalStore } from './storage/LocalStore';
+import type { GridConfig } from './types';
 
 export interface EditorCallbacks {
   onToolChange?: (tool: ToolType) => void;
@@ -32,6 +36,7 @@ export interface EditorCallbacks {
   onViewportChange?: (viewport: ViewportState) => void;
   onLayersChange?: (layers: LayerNode[]) => void;
   onStyleChange?: (style: ActiveStyle) => void;
+  onGridChange?: (grid: GridConfig) => void;
 }
 
 export class Editor {
@@ -53,13 +58,24 @@ export class Editor {
   private tools: Map<ToolType, Tool> = new Map();
   private isSpacePanning: boolean = false;
 
+  private gridConfig: GridConfig = {
+    showGrid: false,
+    snapToGrid: false,
+    gridSize: 20,
+  };
+
   private activeStyle: ActiveStyle = {
     fillColor: '#ffffff',
     strokeColor: '#000000',
     strokeWidth: 2,
     strokeCap: 'round',
     strokeJoin: 'round',
+    dashArray: [],
     opacity: 1,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: 36,
+    fontWeight: 'normal',
+    fontStyle: 'normal',
   };
 
   private callbacks: EditorCallbacks = {};
@@ -108,6 +124,9 @@ export class Editor {
     this.tools.set('select', new SelectTool(this));
     this.tools.set('direct-select', new DirectSelectTool(this));
     this.tools.set('pen', new PenTool(this));
+    this.tools.set('pencil', new PencilTool(this));
+    this.tools.set('text', new TextTool(this));
+    this.tools.set('eyedropper', new EyedropperTool(this));
     this.tools.set('rectangle', new RectangleTool(this));
     this.tools.set('ellipse', new EllipseTool(this));
     this.tools.set('line', new LineTool(this));
@@ -199,6 +218,33 @@ export class Editor {
     LocalStore.scheduleAutoSave(this.viewport.getArtboard(), this.mainLayer);
   }
 
+  public getGridConfig(): GridConfig {
+    return { ...this.gridConfig };
+  }
+
+  public setGridConfig(config: Partial<GridConfig>): void {
+    this.gridConfig = { ...this.gridConfig, ...config };
+    this.renderArtboard();
+    this.callbacks.onGridChange?.(this.gridConfig);
+  }
+
+  public toggleGrid(): void {
+    this.setGridConfig({ showGrid: !this.gridConfig.showGrid });
+  }
+
+  public toggleSnapToGrid(): void {
+    this.setGridConfig({ snapToGrid: !this.gridConfig.snapToGrid });
+  }
+
+  public snapPoint(point: paper.Point): paper.Point {
+    if (!this.gridConfig.snapToGrid) return point;
+    const size = this.gridConfig.gridSize;
+    return new this.scope.Point(
+      Math.round(point.x / size) * size,
+      Math.round(point.y / size) * size
+    );
+  }
+
   public renderArtboard(): void {
     this.artboardLayer.activate();
     this.artboardLayer.removeChildren();
@@ -220,6 +266,35 @@ export class Editor {
       strokeColor: new this.scope.Color(0.2, 0.2, 0.2, 0.8),
       strokeWidth: 1,
     });
+
+    // Grid rendering (crisp grid lines aligned with artboard)
+    if (this.gridConfig.showGrid) {
+      const step = this.gridConfig.gridSize;
+      const gridGroup = new this.scope.Group();
+      gridGroup.name = 'grid-guides';
+
+      // Vertical lines
+      for (let x = bounds.left; x <= bounds.right; x += step) {
+        const line = new this.scope.Path.Line({
+          from: [x, bounds.top],
+          to: [x, bounds.bottom],
+          strokeColor: new this.scope.Color(0, 0, 0, 0.08),
+          strokeWidth: 1,
+        });
+        gridGroup.addChild(line);
+      }
+
+      // Horizontal lines
+      for (let y = bounds.top; y <= bounds.bottom; y += step) {
+        const line = new this.scope.Path.Line({
+          from: [bounds.left, y],
+          to: [bounds.right, y],
+          strokeColor: new this.scope.Color(0, 0, 0, 0.08),
+          strokeWidth: 1,
+        });
+        gridGroup.addChild(line);
+      }
+    }
 
     this.mainLayer.activate();
   }
@@ -394,6 +469,7 @@ export class Editor {
       let type: LayerNode['type'] = 'path';
       if (item instanceof paper.CompoundPath) type = 'compound-path';
       else if (item instanceof paper.Group) type = 'group';
+      else if (item instanceof paper.PointText) type = 'text';
       else if (item instanceof paper.Path.Rectangle || item instanceof paper.Path.Ellipse) type = 'shape';
 
       const node: LayerNode = {
@@ -564,6 +640,13 @@ export class Editor {
         return;
       }
 
+      // Toggle grid (Ctrl+')
+      if ((e.ctrlKey || e.metaKey) && (e.key === '\'' || e.key === '\"')) {
+        e.preventDefault();
+        this.toggleGrid();
+        return;
+      }
+
       // Group (Ctrl+G), Ungroup (Ctrl+Shift+G)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) {
         e.preventDefault();
@@ -619,6 +702,15 @@ export class Editor {
             break;
           case 'p':
             this.setTool('pen');
+            break;
+          case 'n':
+            this.setTool('pencil');
+            break;
+          case 't':
+            this.setTool('text');
+            break;
+          case 'i':
+            this.setTool('eyedropper');
             break;
           case 'm':
             this.setTool('rectangle');

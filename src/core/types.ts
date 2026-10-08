@@ -2,6 +2,9 @@ export type ToolType =
   | 'select' 
   | 'direct-select' 
   | 'pen' 
+  | 'pencil'
+  | 'text'
+  | 'eyedropper'
   | 'rectangle' 
   | 'ellipse' 
   | 'line' 
@@ -13,6 +16,12 @@ export interface ArtboardConfig {
   height: number;
   backgroundColor: string;
   name: string;
+}
+
+export interface GridConfig {
+  showGrid: boolean;
+  snapToGrid: boolean;
+  gridSize: number;
 }
 
 export interface ViewportState {
@@ -27,7 +36,12 @@ export interface ActiveStyle {
   strokeWidth: number;
   strokeCap: 'butt' | 'round' | 'square';
   strokeJoin: 'miter' | 'round' | 'bevel';
+  dashArray?: number[];
   opacity: number;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: 'normal' | 'bold';
+  fontStyle: 'normal' | 'italic';
 }
 
 export interface SelectionBounds {
@@ -44,9 +58,16 @@ export interface SelectionInfo {
   fillColor: string | null;
   strokeColor: string | null;
   strokeWidth: number | null;
+  dashArray: number[] | null;
   opacity: number | null;
   isPath: boolean;
   isGroup: boolean;
+  isText: boolean;
+  textContent?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  fontStyle?: string;
 }
 
 export interface DirectSelectionInfo {
@@ -57,7 +78,7 @@ export interface DirectSelectionInfo {
 export interface LayerNode {
   id: number;
   name: string;
-  type: 'path' | 'compound-path' | 'group' | 'shape';
+  type: 'path' | 'compound-path' | 'group' | 'shape' | 'text';
   visible: boolean;
   locked: boolean;
   selected: boolean;

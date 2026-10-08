@@ -1,5 +1,5 @@
 import React from 'react';
-import { CornerDownRight, Spline, ShieldAlert } from 'lucide-react';
+import { CornerDownRight, Spline, Type, Bold, Italic } from 'lucide-react';
 import type { ActiveStyle, DirectSelectionInfo, SelectionInfo } from '../../core/types';
 import type { Editor } from '../../core/Editor';
 
@@ -10,6 +10,18 @@ interface PropertiesPanelProps {
   activeStyle: ActiveStyle;
   onOpenColorPicker: (type: 'fill' | 'stroke') => void;
 }
+
+const FONT_FAMILIES = [
+  'Inter, sans-serif',
+  'Arial, sans-serif',
+  'Roboto, sans-serif',
+  'Montserrat, sans-serif',
+  'Georgia, serif',
+  'Times New Roman, serif',
+  'Courier New, monospace',
+  'Impact, sans-serif',
+  'Comic Sans MS, cursive',
+];
 
 export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   editor,
@@ -31,6 +43,77 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
   return (
     <div className="flex flex-col gap-4 text-xs">
+      {/* Typography Section (when text item is selected) */}
+      {selection.isText && (
+        <div className="bg-ai-darker p-2.5 rounded border border-ai-border flex flex-col gap-2.5">
+          <div className="text-[11px] font-semibold text-ai-textMuted uppercase tracking-wider flex items-center gap-1.5">
+            <Type size={13} className="text-ai-accent" />
+            Свойства текста (Typography)
+          </div>
+
+          {/* Text Content */}
+          <div>
+            <label className="text-[10px] text-ai-textMuted block mb-1">Текст:</label>
+            <input
+              type="text"
+              value={selection.textContent || ''}
+              onChange={(e) => editor.selectionManager.applyTextContent(e.target.value)}
+              className="w-full bg-ai-darkest px-2.5 py-1.5 rounded border border-ai-border text-ai-textLight font-medium focus:border-ai-accent outline-none"
+            />
+          </div>
+
+          {/* Font Family */}
+          <div>
+            <label className="text-[10px] text-ai-textMuted block mb-1">Шрифт:</label>
+            <select
+              value={selection.fontFamily || 'Inter, sans-serif'}
+              onChange={(e) => editor.selectionManager.applyFontFamily(e.target.value)}
+              className="w-full bg-ai-darkest text-ai-textLight border border-ai-border text-xs rounded px-2 py-1 outline-none focus:border-ai-accent"
+            >
+              {FONT_FAMILIES.map((font) => (
+                <option key={font} value={font} style={{ fontFamily: font }}>
+                  {font.split(',')[0]}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Font Size & Weight */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-ai-textMuted block mb-1">Размер (pt):</label>
+              <input
+                type="number"
+                min="6"
+                max="300"
+                value={selection.fontSize || 36}
+                onChange={(e) =>
+                  editor.selectionManager.applyFontSize(Math.max(6, parseInt(e.target.value) || 12))
+                }
+                className="w-full bg-ai-darkest px-2 py-1 rounded border border-ai-border text-ai-textLight font-mono focus:border-ai-accent outline-none text-right"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-ai-textMuted block mb-1">Начертание:</label>
+              <button
+                onClick={() => {
+                  const currentBold = selection.fontWeight === 'bold';
+                  editor.selectionManager.applyFontWeight(currentBold ? 'normal' : 'bold');
+                }}
+                className={`w-full py-1 rounded border flex items-center justify-center gap-1.5 transition-colors ${
+                  selection.fontWeight === 'bold'
+                    ? 'bg-ai-accent border-ai-accent text-white'
+                    : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
+                }`}
+              >
+                <Bold size={13} />
+                Жирный
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Transform Section */}
       <div>
         <div className="text-[11px] font-semibold text-ai-textMuted uppercase tracking-wider mb-2">
@@ -170,6 +253,52 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 className="w-16 bg-ai-darkest px-2 py-0.5 rounded border border-ai-border text-ai-textLight font-mono focus:border-ai-accent outline-none text-right"
               />
               <span className="text-ai-textMuted text-[10px]">pt</span>
+            </div>
+          </div>
+
+          {/* Stroke Dash Style */}
+          <div className="flex items-center justify-between pt-1 border-t border-ai-border/50">
+            <span className="text-ai-textLight font-medium">Тип линии:</span>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => {
+                  editor.setActiveStyle({ dashArray: [] });
+                  editor.selectionManager.applyDashArray([]);
+                }}
+                className={`px-2 py-0.5 rounded border text-[10px] ${
+                  !activeStyle.dashArray || activeStyle.dashArray.length === 0
+                    ? 'bg-ai-accent border-ai-accent text-white'
+                    : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
+                }`}
+              >
+                Сплошная
+              </button>
+              <button
+                onClick={() => {
+                  editor.setActiveStyle({ dashArray: [8, 6] });
+                  editor.selectionManager.applyDashArray([8, 6]);
+                }}
+                className={`px-2 py-0.5 rounded border text-[10px] ${
+                  activeStyle.dashArray && activeStyle.dashArray.length > 0 && activeStyle.dashArray[0] === 8
+                    ? 'bg-ai-accent border-ai-accent text-white'
+                    : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
+                }`}
+              >
+                Пунктир
+              </button>
+              <button
+                onClick={() => {
+                  editor.setActiveStyle({ dashArray: [2, 5] });
+                  editor.selectionManager.applyDashArray([2, 5]);
+                }}
+                className={`px-2 py-0.5 rounded border text-[10px] ${
+                  activeStyle.dashArray && activeStyle.dashArray.length > 0 && activeStyle.dashArray[0] === 2
+                    ? 'bg-ai-accent border-ai-accent text-white'
+                    : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
+                }`}
+              >
+                Точки
+              </button>
             </div>
           </div>
 

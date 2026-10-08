@@ -4,6 +4,7 @@ import type {
   ActiveStyle,
   ArtboardConfig,
   DirectSelectionInfo,
+  GridConfig,
   LayerNode,
   SelectionInfo,
   ToolType,
@@ -21,7 +22,12 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     strokeWidth: 2,
     strokeCap: 'round',
     strokeJoin: 'round',
+    dashArray: [],
     opacity: 1,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: 36,
+    fontWeight: 'normal',
+    fontStyle: 'normal',
   });
   const [selection, setSelection] = useState<SelectionInfo>({
     count: 0,
@@ -29,9 +35,11 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     fillColor: null,
     strokeColor: null,
     strokeWidth: null,
+    dashArray: null,
     opacity: null,
     isPath: false,
     isGroup: false,
+    isText: false,
   });
   const [directSelection, setDirectSelection] = useState<DirectSelectionInfo>({
     selectedSegmentCount: 0,
@@ -41,6 +49,11 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     zoom: 1,
     panX: 600,
     panY: 400,
+  });
+  const [gridConfig, setGridConfigState] = useState<GridConfig>({
+    showGrid: false,
+    snapToGrid: false,
+    gridSize: 20,
   });
   const [historyState, setHistoryState] = useState({
     canUndo: false,
@@ -67,10 +80,12 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
       onHistoryChange: (canUndo, canRedo) => setHistoryState({ canUndo, canRedo }),
       onViewportChange: (vp) => setViewport(vp),
       onLayersChange: (tree) => setLayers(tree),
+      onGridChange: (grid) => setGridConfigState(grid),
     });
 
     editorRef.current = editor;
     setArtboard(editor.viewport.getArtboard());
+    setGridConfigState(editor.getGridConfig());
     setIsReady(true);
 
     const handleResize = () => {
@@ -110,6 +125,18 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     }
   }, []);
 
+  const toggleGrid = useCallback(() => {
+    editorRef.current?.toggleGrid();
+  }, []);
+
+  const toggleSnapToGrid = useCallback(() => {
+    editorRef.current?.toggleSnapToGrid();
+  }, []);
+
+  const setGridConfig = useCallback((config: Partial<GridConfig>) => {
+    editorRef.current?.setGridConfig(config);
+  }, []);
+
   return {
     editor: editorRef.current,
     isReady,
@@ -118,6 +145,7 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     selection,
     directSelection,
     viewport,
+    gridConfig,
     historyState,
     layers,
     artboard,
@@ -125,5 +153,8 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     updateStyle,
     swapColors,
     updateArtboard,
+    toggleGrid,
+    toggleSnapToGrid,
+    setGridConfig,
   };
 }

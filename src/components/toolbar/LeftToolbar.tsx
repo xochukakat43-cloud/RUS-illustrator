@@ -3,6 +3,9 @@ import {
   MousePointer,
   SquareDashedMousePointer,
   PenTool as PenIcon,
+  Pencil,
+  Type,
+  Pipette,
   Square,
   Circle,
   Slash,
@@ -33,6 +36,9 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
     { type: 'select', label: 'Выделение (Selection Tool)', shortcut: 'V', icon: <MousePointer size={18} /> },
     { type: 'direct-select', label: 'Прямое выделение (Direct Selection)', shortcut: 'A', icon: <SquareDashedMousePointer size={18} /> },
     { type: 'pen', label: 'Перо Безье (Pen Tool)', shortcut: 'P', icon: <PenIcon size={18} /> },
+    { type: 'pencil', label: 'Карандаш / Свободное перо (Pencil)', shortcut: 'N', icon: <Pencil size={18} /> },
+    { type: 'text', label: 'Текст (Type Tool)', shortcut: 'T', icon: <Type size={18} /> },
+    { type: 'eyedropper', label: 'Пипетка (Eyedropper)', shortcut: 'I', icon: <Pipette size={18} /> },
     { type: 'rectangle', label: 'Прямоугольник (Rectangle)', shortcut: 'M', icon: <Square size={18} /> },
     { type: 'ellipse', label: 'Эллипс (Ellipse)', shortcut: 'L', icon: <Circle size={18} /> },
     { type: 'line', label: 'Отрезок (Line Tool)', shortcut: '\\', icon: <Slash size={18} className="rotate-45" /> },
@@ -41,7 +47,7 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
   ];
 
   return (
-    <aside className="w-13 bg-ai-panel border-r border-ai-border flex flex-col items-center py-2.5 z-20 select-none shadow-md shrink-0">
+    <aside className="w-13 bg-ai-panel border-r border-ai-border flex flex-col items-center py-2 z-20 select-none shadow-md shrink-0 overflow-y-auto">
       {/* Tool Buttons */}
       <div className="flex flex-col gap-1 w-full px-1.5">
         {tools.map((t) => {
@@ -51,7 +57,7 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
               key={t.type}
               onClick={() => onSelectTool(t.type)}
               title={`${t.label} [${t.shortcut}]`}
-              className={`relative flex items-center justify-center w-10 h-10 rounded-md transition-colors ${
+              className={`relative flex items-center justify-center w-10 h-9 rounded-md transition-colors ${
                 isActive
                   ? 'bg-ai-accent text-white shadow-xs'
                   : 'text-ai-textMuted hover:bg-ai-hover hover:text-ai-textLight'
@@ -59,7 +65,7 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
             >
               {t.icon}
               {/* Shortcut small corner tag */}
-              <span className="absolute bottom-0.5 right-1 text-[9px] opacity-60 font-mono">
+              <span className="absolute bottom-0.5 right-1 text-[8px] opacity-60 font-mono">
                 {t.shortcut.split(' ')[0]}
               </span>
             </button>
@@ -67,10 +73,10 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
         })}
       </div>
 
-      <div className="w-8 h-[1px] bg-ai-border my-3" />
+      <div className="w-8 h-[1px] bg-ai-border my-2" />
 
       {/* Illustrator Iconic Overlapping Color Swatches */}
-      <div className="relative w-10 h-10 mt-1">
+      <div className="relative w-10 h-10 mt-0.5">
         {/* Stroke Swatch (Bottom-right) */}
         <button
           onClick={() => onOpenColorPicker('stroke')}

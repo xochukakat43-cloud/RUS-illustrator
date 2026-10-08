@@ -10,6 +10,8 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  Grid,
+  Magnet,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -18,14 +20,17 @@ import {
   AlignVerticalJustifyEnd,
 } from 'lucide-react';
 import type { Editor } from '../../core/Editor';
-import type { ActiveStyle, SelectionInfo, ViewportState } from '../../core/types';
+import type { ActiveStyle, GridConfig, SelectionInfo, ViewportState } from '../../core/types';
 
 interface TopControlBarProps {
   editor: Editor | null;
   viewport: ViewportState;
+  gridConfig: GridConfig;
   selection: SelectionInfo;
   activeStyle: ActiveStyle;
   historyState: { canUndo: boolean; canRedo: boolean };
+  onToggleGrid: () => void;
+  onToggleSnapToGrid: () => void;
   onOpenExportModal: () => void;
   onOpenColorPicker: (type: 'fill' | 'stroke') => void;
 }
@@ -33,9 +38,12 @@ interface TopControlBarProps {
 export const TopControlBar: React.FC<TopControlBarProps> = ({
   editor,
   viewport,
+  gridConfig,
   selection,
   activeStyle,
   historyState,
+  onToggleGrid,
+  onToggleSnapToGrid,
   onOpenExportModal,
   onOpenColorPicker,
 }) => {
@@ -270,8 +278,34 @@ export const TopControlBar: React.FC<TopControlBarProps> = ({
         )}
       </div>
 
-      {/* Right Section: Zoom & Prominent Export Button */}
+      {/* Right Section: Grid, Snap, Zoom & Export */}
       <div className="flex items-center gap-2">
+        {/* Grid & Snap Buttons */}
+        <div className="flex items-center gap-0.5 bg-ai-darker p-0.5 rounded border border-ai-border">
+          <button
+            onClick={onToggleGrid}
+            title={`Сетка документа (Ctrl+') [${gridConfig.showGrid ? 'Включена' : 'Выключена'}]`}
+            className={`p-1.5 rounded transition-colors ${
+              gridConfig.showGrid
+                ? 'bg-ai-accent text-white shadow-xs'
+                : 'text-ai-textMuted hover:bg-ai-hover hover:text-ai-textLight'
+            }`}
+          >
+            <Grid size={14} />
+          </button>
+          <button
+            onClick={onToggleSnapToGrid}
+            title={`Привязка к сетке [${gridConfig.snapToGrid ? 'Включена' : 'Выключена'}]`}
+            className={`p-1.5 rounded transition-colors ${
+              gridConfig.snapToGrid
+                ? 'bg-ai-accent text-white shadow-xs'
+                : 'text-ai-textMuted hover:bg-ai-hover hover:text-ai-textLight'
+            }`}
+          >
+            <Magnet size={14} />
+          </button>
+        </div>
+
         {/* Zoom controls */}
         <div className="flex items-center gap-1 bg-ai-darker px-1.5 py-0.5 rounded border border-ai-border">
           <button

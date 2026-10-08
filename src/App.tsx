@@ -20,10 +20,13 @@ export function App() {
     historyState,
     layers,
     artboard,
+    gridConfig,
     setTool,
     updateStyle,
     swapColors,
     updateArtboard,
+    toggleGrid,
+    toggleSnapToGrid,
   } = useEditor(canvasRef);
 
   // Modals state
@@ -55,9 +58,12 @@ export function App() {
       <TopControlBar
         editor={editor}
         viewport={viewport}
+        gridConfig={gridConfig}
         selection={selection}
         activeStyle={activeStyle}
         historyState={historyState}
+        onToggleGrid={toggleGrid}
+        onToggleSnapToGrid={toggleSnapToGrid}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenColorPicker={handleOpenColorPicker}
       />

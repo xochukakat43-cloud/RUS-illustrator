@@ -67,9 +67,11 @@ export class SelectionManager {
         fillColor: null,
         strokeColor: null,
         strokeWidth: null,
+        dashArray: null,
         opacity: null,
         isPath: false,
         isGroup: false,
+        isText: false,
       };
     }
 
@@ -81,6 +83,9 @@ export class SelectionManager {
     const firstItem = items[0];
     const fillHex = firstItem.fillColor ? firstItem.fillColor.toCSS(true) : null;
     const strokeHex = firstItem.strokeColor ? firstItem.strokeColor.toCSS(true) : null;
+
+    const isText = firstItem instanceof paper.PointText;
+    const textItem = isText ? (firstItem as paper.PointText) : null;
 
     return {
       count: items.length,
@@ -94,9 +99,19 @@ export class SelectionManager {
       fillColor: fillHex,
       strokeColor: strokeHex,
       strokeWidth: firstItem.strokeWidth || 0,
+      dashArray: firstItem.dashArray ? [...firstItem.dashArray] : null,
       opacity: firstItem.opacity ?? 1,
       isPath: firstItem instanceof paper.Path,
       isGroup: firstItem instanceof paper.Group,
+      isText,
+      textContent: textItem ? textItem.content : undefined,
+      fontFamily: textItem ? textItem.fontFamily : undefined,
+      fontSize: textItem
+        ? typeof textItem.fontSize === 'number'
+          ? textItem.fontSize
+          : parseFloat(textItem.fontSize as string) || 36
+        : undefined,
+      fontWeight: textItem ? (textItem.fontWeight as string) : undefined,
     };
   }
 
@@ -214,6 +229,59 @@ export class SelectionManager {
       item.position.y += dy;
     });
 
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyTextContent(content: string): void {
+    const items = this.getSelectedItems();
+    items.forEach((item) => {
+      if (item instanceof paper.PointText) {
+        item.content = content;
+      }
+    });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyFontFamily(fontFamily: string): void {
+    const items = this.getSelectedItems();
+    items.forEach((item) => {
+      if (item instanceof paper.PointText) {
+        item.fontFamily = fontFamily;
+      }
+    });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyFontSize(size: number): void {
+    const items = this.getSelectedItems();
+    items.forEach((item) => {
+      if (item instanceof paper.PointText) {
+        item.fontSize = size;
+      }
+    });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyFontWeight(weight: string): void {
+    const items = this.getSelectedItems();
+    items.forEach((item) => {
+      if (item instanceof paper.PointText) {
+        item.fontWeight = weight;
+      }
+    });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyDashArray(dashArray: number[] | null): void {
+    const items = this.getSelectedItems();
+    items.forEach((item) => {
+      item.dashArray = dashArray || [];
+    });
     this.updateSelection();
     this.editor.history.pushState();
   }
