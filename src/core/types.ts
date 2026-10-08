@@ -7,6 +7,8 @@ export type ToolType =
   | 'eyedropper'
   | 'rectangle' 
   | 'ellipse' 
+  | 'polygon'
+  | 'star'
   | 'line' 
   | 'pan' 
   | 'zoom';
@@ -63,6 +65,7 @@ export interface SelectionInfo {
   isPath: boolean;
   isGroup: boolean;
   isText: boolean;
+  cornerRadius?: number;
   textContent?: string;
   fontFamily?: string;
   fontSize?: number;

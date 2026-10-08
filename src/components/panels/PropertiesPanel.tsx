@@ -1,5 +1,5 @@
 import React from 'react';
-import { CornerDownRight, Spline, Type, Bold, Italic } from 'lucide-react';
+import { CornerDownRight, Spline, Type, Bold, Italic, Radius } from 'lucide-react';
 import type { ActiveStyle, DirectSelectionInfo, SelectionInfo } from '../../core/types';
 import type { Editor } from '../../core/Editor';
 
@@ -157,6 +157,43 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 className="w-full bg-ai-darkest px-2 py-1 rounded border border-ai-border text-ai-textLight font-mono focus:border-ai-accent outline-none"
               />
             </div>
+
+            {/* Live Corner Radius */}
+            {selection.isPath && (
+              <div className="flex items-center justify-between col-span-2 pt-2 mt-0.5 border-t border-ai-border/60">
+                <div className="flex items-center gap-1.5 text-ai-textMuted">
+                  <Radius size={13} className="text-ai-accent" />
+                  <span className="text-[10px] font-medium">Скругление:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={selection.cornerRadius || 0}
+                    onChange={(e) =>
+                      editor.selectionManager.applyCornerRadius(parseFloat(e.target.value) || 0)
+                    }
+                    className="w-18 accent-ai-accent h-1 bg-ai-darkest rounded cursor-pointer"
+                  />
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="500"
+                      value={selection.cornerRadius || 0}
+                      onChange={(e) =>
+                        editor.selectionManager.applyCornerRadius(
+                          Math.max(0, parseFloat(e.target.value) || 0)
+                        )
+                      }
+                      className="w-12 bg-ai-darkest px-1.5 py-0.5 rounded border border-ai-border text-ai-textLight font-mono focus:border-ai-accent outline-none text-right text-[11px]"
+                    />
+                    <span className="text-[10px] text-ai-textMuted">px</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-ai-textMuted italic bg-ai-darker p-2.5 rounded border border-ai-border text-center">

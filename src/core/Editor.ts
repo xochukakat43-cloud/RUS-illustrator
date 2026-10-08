@@ -19,7 +19,7 @@ import { PenTool } from './tools/PenTool';
 import { PencilTool } from './tools/PencilTool';
 import { TextTool } from './tools/TextTool';
 import { EyedropperTool } from './tools/EyedropperTool';
-import { EllipseTool, LineTool, RectangleTool } from './tools/ShapeTools';
+import { EllipseTool, LineTool, PolygonTool, RectangleTool, StarTool } from './tools/ShapeTools';
 import { PanTool, ZoomTool } from './tools/NavTools';
 import { Pathfinder } from './operations/Pathfinder';
 import { Alignment } from './operations/Alignment';
@@ -133,6 +133,8 @@ export class Editor {
     this.tools.set('eyedropper', new EyedropperTool(this));
     this.tools.set('rectangle', new RectangleTool(this));
     this.tools.set('ellipse', new EllipseTool(this));
+    this.tools.set('polygon', new PolygonTool(this));
+    this.tools.set('star', new StarTool(this));
     this.tools.set('line', new LineTool(this));
     this.tools.set('pan', new PanTool(this));
     this.tools.set('zoom', new ZoomTool(this));

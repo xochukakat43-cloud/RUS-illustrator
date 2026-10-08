@@ -1,6 +1,7 @@
 import paper from 'paper';
 import type { Editor } from './Editor';
 import type { DirectSelectionInfo, SelectionInfo } from './types';
+import { applyCornerRadius } from './tools/ShapeTools';
 
 export class SelectionManager {
   private editor: Editor;
@@ -121,6 +122,7 @@ export class SelectionManager {
       isPath: firstItem instanceof paper.Path,
       isGroup: firstItem instanceof paper.Group,
       isText,
+      cornerRadius: typeof firstItem.data?.cornerRadius === 'number' ? firstItem.data.cornerRadius : 0,
       textContent: textItem ? textItem.content : undefined,
       fontFamily: textItem ? textItem.fontFamily : undefined,
       fontSize: textItem
@@ -218,6 +220,20 @@ export class SelectionManager {
     items.forEach((item) => {
       item.opacity = opacity;
     });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyCornerRadius(radius: number): void {
+    const items = this.getSelectedItems();
+    if (items.length === 0) return;
+
+    items.forEach((item) => {
+      if (item instanceof paper.Path) {
+        applyCornerRadius(item, radius);
+      }
+    });
+
     this.updateSelection();
     this.editor.history.pushState();
   }

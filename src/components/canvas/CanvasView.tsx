@@ -17,6 +17,8 @@ const TOOL_NAMES: Record<ToolType, string> = {
   eyedropper: 'Пипетка (Eyedropper)',
   rectangle: 'Прямоугольник (Rectangle)',
   ellipse: 'Эллипс (Ellipse)',
+  polygon: 'Многоугольник (Polygon Tool)',
+  star: 'Звезда (Star Tool)',
   line: 'Отрезок (Line)',
   pan: 'Панорамирование (Hand Tool)',
   zoom: 'Масштаб (Zoom Tool)',
