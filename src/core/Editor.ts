@@ -20,6 +20,7 @@ import { PencilTool } from './tools/PencilTool';
 import { TextTool } from './tools/TextTool';
 import { EyedropperTool } from './tools/EyedropperTool';
 import { EllipseTool, LineTool, PolygonTool, RectangleTool, StarTool } from './tools/ShapeTools';
+import { GradientTool } from './tools/GradientTool';
 import { PanTool, ZoomTool } from './tools/NavTools';
 import { Pathfinder } from './operations/Pathfinder';
 import { Alignment } from './operations/Alignment';
@@ -27,7 +28,8 @@ import { Arrangement } from './operations/Arrangement';
 import { Exporter } from './storage/Exporter';
 import { Serializer } from './storage/Serializer';
 import { LocalStore } from './storage/LocalStore';
-import type { GridConfig } from './types';
+import type { GridConfig, GuidesConfig, ManualGuide } from './types';
+import { SmartGuidesEngine } from './snapping/SmartGuides';
 
 export interface EditorCallbacks {
   onToolChange?: (tool: ToolType) => void;
@@ -37,6 +39,8 @@ export interface EditorCallbacks {
   onLayersChange?: (layers: LayerNode[]) => void;
   onStyleChange?: (style: ActiveStyle) => void;
   onGridChange?: (grid: GridConfig) => void;
+  onGuidesConfigChange?: (config: GuidesConfig) => void;
+  onManualGuidesChange?: (guides: ManualGuide[]) => void;
 }
 
 export class Editor {
@@ -44,6 +48,7 @@ export class Editor {
   public readonly viewport: Viewport;
   public readonly history: HistoryManager;
   public readonly selectionManager: SelectionManager;
+  public readonly smartGuides: SmartGuidesEngine;
 
   private canvas: HTMLCanvasElement;
   private artboardLayer: paper.Layer;
@@ -63,6 +68,16 @@ export class Editor {
     snapToGrid: false,
     gridSize: 20,
   };
+
+  private guidesConfig: GuidesConfig = {
+    showRulers: true,
+    showGuides: true,
+    lockGuides: false,
+    smartGuides: true,
+    snapToGuides: true,
+  };
+
+  private manualGuides: ManualGuide[] = [];
 
   private activeStyle: ActiveStyle = {
     fillColor: '#ffffff',
@@ -123,6 +138,8 @@ export class Editor {
     );
 
     this.selectionManager = new SelectionManager(this);
+    this.smartGuides = new SmartGuidesEngine(this.scope);
+    (window as any).__editor = this;
 
     // Initialize tools
     this.tools.set('select', new SelectTool(this));
@@ -136,6 +153,7 @@ export class Editor {
     this.tools.set('polygon', new PolygonTool(this));
     this.tools.set('star', new StarTool(this));
     this.tools.set('line', new LineTool(this));
+    this.tools.set('gradient', new GradientTool(this));
     this.tools.set('pan', new PanTool(this));
     this.tools.set('zoom', new ZoomTool(this));
 
@@ -173,7 +191,11 @@ export class Editor {
     this.activeStyle = { ...this.activeStyle, ...style };
 
     // Apply to current selection if any
-    if (style.fillColor !== undefined) {
+    if (style.gradient !== undefined) {
+      if (style.gradient) {
+        this.selectionManager.applyGradient(style.gradient);
+      }
+    } else if (style.fillColor !== undefined) {
       this.selectionManager.applyFill(style.fillColor);
     }
     if (style.strokeColor !== undefined) {
@@ -251,6 +273,60 @@ export class Editor {
     );
   }
 
+  public getGuidesConfig(): GuidesConfig {
+    return { ...this.guidesConfig };
+  }
+
+  public setGuidesConfig(config: Partial<GuidesConfig>): void {
+    this.guidesConfig = { ...this.guidesConfig, ...config };
+    this.renderOverlay();
+    this.callbacks.onGuidesConfigChange?.(this.guidesConfig);
+  }
+
+  public toggleRulers(): void {
+    this.setGuidesConfig({ showRulers: !this.guidesConfig.showRulers });
+  }
+
+  public toggleGuides(): void {
+    this.setGuidesConfig({ showGuides: !this.guidesConfig.showGuides });
+  }
+
+  public toggleSmartGuides(): void {
+    this.setGuidesConfig({ smartGuides: !this.guidesConfig.smartGuides });
+  }
+
+  public toggleLockGuides(): void {
+    this.setGuidesConfig({ lockGuides: !this.guidesConfig.lockGuides });
+  }
+
+  public getManualGuides(): ManualGuide[] {
+    return [...this.manualGuides];
+  }
+
+  public addManualGuide(orientation: 'horizontal' | 'vertical', coord: number): ManualGuide {
+    const guide: ManualGuide = {
+      id: `guide-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      orientation,
+      coord,
+    };
+    this.manualGuides.push(guide);
+    this.renderOverlay();
+    this.callbacks.onManualGuidesChange?.(this.manualGuides);
+    return guide;
+  }
+
+  public removeManualGuide(id: string): void {
+    this.manualGuides = this.manualGuides.filter((g) => g.id !== id);
+    this.renderOverlay();
+    this.callbacks.onManualGuidesChange?.(this.manualGuides);
+  }
+
+  public clearManualGuides(): void {
+    this.manualGuides = [];
+    this.renderOverlay();
+    this.callbacks.onManualGuidesChange?.(this.manualGuides);
+  }
+
   public renderArtboard(): void {
     this.artboardLayer.activate();
     this.artboardLayer.removeChildren();
@@ -307,9 +383,45 @@ export class Editor {
 
   public renderOverlay(): void {
     this.overlayLayer.activate();
-    // Keep user's active tools temporary items (rubberband, marquee) if present, but clear bounding boxes
-    const helpers = this.overlayLayer.children.filter((c) => c.data?.isTransformOverlay);
+    // Keep user's active tools temporary items (rubberband, marquee) if present, but clear bounding boxes & manual guide lines
+    const helpers = this.overlayLayer.children.filter(
+      (c) => c.data?.isTransformOverlay || c.data?.isManualGuideLine
+    );
     helpers.forEach((h) => h.remove());
+
+    const zoom = this.viewport.getZoom();
+
+    // Render manual guide lines (Cyan #00c0ff, 1 / zoom px)
+    if (this.guidesConfig.showGuides && this.manualGuides.length > 0) {
+      const artboardBounds = this.viewport.getArtboardBounds();
+      const cyanColor = new this.scope.Color('#00c0ff');
+      const strokeWidth = 1 / zoom;
+
+      this.manualGuides.forEach((g) => {
+        let line: paper.Path.Line;
+        if (g.orientation === 'vertical') {
+          line = new this.scope.Path.Line({
+            from: new this.scope.Point(g.coord, artboardBounds.top - 10000),
+            to: new this.scope.Point(g.coord, artboardBounds.bottom + 10000),
+            strokeColor: cyanColor,
+            strokeWidth,
+            dashArray: [4 / zoom, 2 / zoom],
+            insert: false,
+          });
+        } else {
+          line = new this.scope.Path.Line({
+            from: new this.scope.Point(artboardBounds.left - 10000, g.coord),
+            to: new this.scope.Point(artboardBounds.right + 10000, g.coord),
+            strokeColor: cyanColor,
+            strokeWidth,
+            dashArray: [4 / zoom, 2 / zoom],
+            insert: false,
+          });
+        }
+        line.data = { isManualGuideLine: true, guideId: g.id };
+        this.overlayLayer.addChild(line);
+      });
+    }
 
     if (this.activeToolType === 'select') {
       const selected = this.selectionManager.getSelectedItems();
@@ -650,6 +762,31 @@ export class Editor {
         return;
       }
 
+      // Toggle Smart Guides (Ctrl+U)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+        e.preventDefault();
+        this.toggleSmartGuides();
+        return;
+      }
+
+      // Toggle Rulers (Ctrl+R)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R')) {
+        e.preventDefault();
+        this.toggleRulers();
+        return;
+      }
+
+      // Toggle Guides (Ctrl+;)
+      if ((e.ctrlKey || e.metaKey) && (e.key === ';' || e.key === 'ж' || e.key === 'Ж')) {
+        e.preventDefault();
+        if (e.altKey) {
+          this.toggleLockGuides();
+        } else {
+          this.toggleGuides();
+        }
+        return;
+      }
+
       // Group (Ctrl+G), Ungroup (Ctrl+Shift+G)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G')) {
         e.preventDefault();
@@ -723,6 +860,9 @@ export class Editor {
             break;
           case '\\':
             this.setTool('line');
+            break;
+          case 'g':
+            this.setTool('gradient');
             break;
           case 'h':
             this.setTool('pan');

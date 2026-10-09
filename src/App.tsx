@@ -7,6 +7,8 @@ import { RightSidebar } from './components/panels/RightSidebar';
 import { ColorPickerModal } from './components/dialogs/ColorPickerModal';
 import { ExportModal } from './components/dialogs/ExportModal';
 
+import type { GradientDef } from './core/types';
+
 export function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -21,12 +23,16 @@ export function App() {
     layers,
     artboard,
     gridConfig,
+    guidesConfig,
     setTool,
     updateStyle,
     swapColors,
     updateArtboard,
     toggleGrid,
     toggleSnapToGrid,
+    toggleRulers,
+    toggleGuides,
+    toggleSmartGuides,
   } = useEditor(canvasRef);
 
   // Modals state
@@ -39,9 +45,15 @@ export function App() {
 
   const handleSelectColor = (color: string | null) => {
     if (colorPickerTarget === 'fill') {
-      updateStyle({ fillColor: color });
+      updateStyle({ fillColor: color, gradient: null });
     } else if (colorPickerTarget === 'stroke') {
       updateStyle({ strokeColor: color });
+    }
+  };
+
+  const handleSelectGradient = (gradient: GradientDef) => {
+    if (colorPickerTarget === 'fill') {
+      updateStyle({ gradient, fillColor: null });
     }
   };
 
@@ -59,11 +71,15 @@ export function App() {
         editor={editor}
         viewport={viewport}
         gridConfig={gridConfig}
+        guidesConfig={guidesConfig}
         selection={selection}
         activeStyle={activeStyle}
         historyState={historyState}
         onToggleGrid={toggleGrid}
         onToggleSnapToGrid={toggleSnapToGrid}
+        onToggleRulers={toggleRulers}
+        onToggleGuides={toggleGuides}
+        onToggleSmartGuides={toggleSmartGuides}
         onOpenExportModal={() => setIsExportModalOpen(true)}
         onOpenColorPicker={handleOpenColorPicker}
       />
@@ -80,10 +96,12 @@ export function App() {
         />
 
         <CanvasView
+          editor={editor}
           canvasRef={canvasRef}
           activeTool={activeTool}
           viewport={viewport}
           artboard={artboard}
+          guidesConfig={guidesConfig}
         />
 
         <RightSidebar
@@ -103,8 +121,11 @@ export function App() {
         isOpen={colorPickerTarget !== null}
         onClose={() => setColorPickerTarget(null)}
         currentColor={colorPickerTarget === 'fill' ? activeStyle.fillColor : activeStyle.strokeColor}
+        currentGradient={colorPickerTarget === 'fill' ? activeStyle.gradient : null}
         onSelectColor={handleSelectColor}
+        onSelectGradient={handleSelectGradient}
         title={colorPickerTarget === 'fill' ? 'Выбор цвета заливки (Fill)' : 'Выбор цвета обводки (Stroke)'}
+        allowGradient={colorPickerTarget === 'fill'}
       />
 
       {/* Export Modal */}

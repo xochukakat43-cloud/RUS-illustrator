@@ -11,6 +11,7 @@ import {
   Hexagon,
   Star,
   Slash,
+  Blend,
   Hand,
   ZoomIn,
   ArrowLeftRight,
@@ -46,6 +47,7 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
     { type: 'polygon', label: 'Многоугольник (Polygon Tool)', shortcut: 'Up/Dn', icon: <Hexagon size={18} /> },
     { type: 'star', label: 'Звезда (Star Tool)', shortcut: 'Up/Dn', icon: <Star size={18} /> },
     { type: 'line', label: 'Отрезок (Line Tool)', shortcut: '\\', icon: <Slash size={18} className="rotate-45" /> },
+    { type: 'gradient', label: 'Градиент (Gradient Tool)', shortcut: 'G', icon: <Blend size={18} /> },
     { type: 'pan', label: 'Рука / Панорамирование (Hand Tool)', shortcut: 'H / Space', icon: <Hand size={18} /> },
     { type: 'zoom', label: 'Масштаб (Zoom Tool)', shortcut: 'Z', icon: <ZoomIn size={18} /> },
   ];
@@ -101,7 +103,11 @@ export const LeftToolbar: React.FC<LeftToolbarProps> = ({
           className="absolute left-0 top-0 w-6 h-6 rounded-xs border-2 border-ai-border hover:border-ai-accent transition-colors shadow-md z-10"
           style={{
             backgroundColor: activeStyle.fillColor || 'transparent',
-            backgroundImage: !activeStyle.fillColor
+            backgroundImage: activeStyle.gradient
+              ? activeStyle.gradient.type === 'radial'
+                ? `radial-gradient(circle, ${activeStyle.gradient.stops.map((s) => `${s.color} ${Math.round(s.offset * 100)}%`).join(', ')})`
+                : `linear-gradient(90deg, ${activeStyle.gradient.stops.map((s) => `${s.color} ${Math.round(s.offset * 100)}%`).join(', ')})`
+              : !activeStyle.fillColor
               ? 'linear-gradient(45deg, transparent 40%, #ef4444 45%, #ef4444 55%, transparent 60%)'
               : undefined,
           }}

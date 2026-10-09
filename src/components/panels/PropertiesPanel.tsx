@@ -244,16 +244,35 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 className="w-6 h-6 rounded border border-ai-border hover:border-ai-accent transition-colors shadow-xs"
                 style={{
                   backgroundColor: activeStyle.fillColor || 'transparent',
-                  backgroundImage: !activeStyle.fillColor
+                  backgroundImage: activeStyle.gradient
+                    ? activeStyle.gradient.type === 'radial'
+                      ? `radial-gradient(circle, ${activeStyle.gradient.stops.map((s) => `${s.color} ${Math.round(s.offset * 100)}%`).join(', ')})`
+                      : `linear-gradient(90deg, ${activeStyle.gradient.stops.map((s) => `${s.color} ${Math.round(s.offset * 100)}%`).join(', ')})`
+                    : !activeStyle.fillColor
                     ? 'linear-gradient(45deg, transparent 40%, #ef4444 45%, #ef4444 55%, transparent 60%)'
                     : undefined,
                 }}
               />
-              <span className="font-mono text-ai-textMuted w-16 text-right">
-                {activeStyle.fillColor || 'None'}
+              <span className="font-mono text-ai-textMuted w-24 text-right truncate">
+                {activeStyle.gradient
+                  ? activeStyle.gradient.type === 'radial'
+                    ? 'Радиальный'
+                    : 'Линейный'
+                  : activeStyle.fillColor || 'None'}
               </span>
             </div>
           </div>
+
+          {activeStyle.gradient && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => editor.setTool('gradient')}
+                className="text-[10px] text-ai-accent hover:underline flex items-center gap-1"
+              >
+                Настроить на холсте (G)
+              </button>
+            </div>
+          )}
 
           {/* Stroke row */}
           <div className="flex items-center justify-between">

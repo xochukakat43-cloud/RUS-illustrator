@@ -1,6 +1,6 @@
 import paper from 'paper';
 import type { Editor } from './Editor';
-import type { DirectSelectionInfo, SelectionInfo } from './types';
+import type { DirectSelectionInfo, GradientDef, GradientStop, SelectionInfo } from './types';
 import { applyCornerRadius } from './tools/ShapeTools';
 
 export class SelectionManager {
@@ -99,7 +99,27 @@ export class SelectionManager {
     }
 
     const firstItem = items[0];
-    const fillHex = firstItem.fillColor ? firstItem.fillColor.toCSS(true) : null;
+    let fillHex: string | null = null;
+    let gradientInfo: GradientDef | null = null;
+
+    if (firstItem.fillColor && (firstItem.fillColor as any).gradient) {
+      const g = (firstItem.fillColor as any).gradient;
+      const stops: GradientStop[] = (g.stops || []).map((s: any) => ({
+        color: s.color ? s.color.toCSS(true) : '#000000',
+        offset: s.offset ?? 0,
+      }));
+      const originPoint = (firstItem.fillColor as any).origin;
+      const destPoint = (firstItem.fillColor as any).destination;
+      gradientInfo = {
+        type: g.radial ? 'radial' : 'linear',
+        stops,
+        origin: originPoint ? { x: originPoint.x, y: originPoint.y } : undefined,
+        destination: destPoint ? { x: destPoint.x, y: destPoint.y } : undefined,
+      };
+    } else if (firstItem.fillColor) {
+      fillHex = firstItem.fillColor.toCSS(true);
+    }
+
     const strokeHex = firstItem.strokeColor ? firstItem.strokeColor.toCSS(true) : null;
 
     const isText = firstItem instanceof paper.PointText;
@@ -115,6 +135,7 @@ export class SelectionManager {
         rotation: 0,
       },
       fillColor: fillHex,
+      gradient: gradientInfo,
       strokeColor: strokeHex,
       strokeWidth: firstItem.strokeWidth || 0,
       dashArray: firstItem.dashArray ? [...firstItem.dashArray] : null,
@@ -186,6 +207,36 @@ export class SelectionManager {
 
     items.forEach((item) => {
       item.fillColor = color ? new paper.Color(color) : null as any;
+    });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyGradient(gradientDef: GradientDef): void {
+    const items = this.getSelectedItems();
+    if (items.length === 0) return;
+
+    items.forEach((item) => {
+      const bounds = item.bounds;
+      const isRadial = gradientDef.type === 'radial';
+      const pOrigin = gradientDef.origin
+        ? new paper.Point(gradientDef.origin.x, gradientDef.origin.y)
+        : isRadial
+        ? bounds.center
+        : bounds.topLeft;
+
+      const pDest = gradientDef.destination
+        ? new paper.Point(gradientDef.destination.x, gradientDef.destination.y)
+        : isRadial
+        ? bounds.center.add(new paper.Point(Math.max(bounds.width, bounds.height) / 2, 0))
+        : bounds.bottomRight;
+
+      const pStops = gradientDef.stops.map(
+        (s) => new paper.GradientStop(new paper.Color(s.color), s.offset)
+      );
+      const pGradient = new (paper as any).Gradient(pStops, isRadial);
+
+      item.fillColor = new paper.Color(pGradient, pOrigin, pDest);
     });
     this.updateSelection();
     this.editor.history.pushState();

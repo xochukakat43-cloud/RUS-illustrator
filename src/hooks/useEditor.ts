@@ -5,6 +5,7 @@ import type {
   ArtboardConfig,
   DirectSelectionInfo,
   GridConfig,
+  GuidesConfig,
   LayerNode,
   SelectionInfo,
   ToolType,
@@ -55,6 +56,13 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     snapToGrid: false,
     gridSize: 20,
   });
+  const [guidesConfig, setGuidesConfigState] = useState<GuidesConfig>({
+    showRulers: true,
+    showGuides: true,
+    lockGuides: false,
+    smartGuides: true,
+    snapToGuides: true,
+  });
   const [historyState, setHistoryState] = useState({
     canUndo: false,
     canRedo: false,
@@ -81,11 +89,13 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
       onViewportChange: (vp) => setViewport(vp),
       onLayersChange: (tree) => setLayers(tree),
       onGridChange: (grid) => setGridConfigState(grid),
+      onGuidesConfigChange: (guides) => setGuidesConfigState(guides),
     });
 
     editorRef.current = editor;
     setArtboard(editor.viewport.getArtboard());
     setGridConfigState(editor.getGridConfig());
+    setGuidesConfigState(editor.getGuidesConfig());
     setIsReady(true);
 
     const canvas = canvasRef.current;
@@ -151,6 +161,22 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     editorRef.current?.setGridConfig(config);
   }, []);
 
+  const toggleRulers = useCallback(() => {
+    editorRef.current?.toggleRulers();
+  }, []);
+
+  const toggleGuides = useCallback(() => {
+    editorRef.current?.toggleGuides();
+  }, []);
+
+  const toggleSmartGuides = useCallback(() => {
+    editorRef.current?.toggleSmartGuides();
+  }, []);
+
+  const setGuidesConfig = useCallback((config: Partial<GuidesConfig>) => {
+    editorRef.current?.setGuidesConfig(config);
+  }, []);
+
   return {
     editor: editorRef.current,
     isReady,
@@ -160,6 +186,7 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     directSelection,
     viewport,
     gridConfig,
+    guidesConfig,
     historyState,
     layers,
     artboard,
@@ -170,5 +197,9 @@ export function useEditor(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     toggleGrid,
     toggleSnapToGrid,
     setGridConfig,
+    toggleRulers,
+    toggleGuides,
+    toggleSmartGuides,
+    setGuidesConfig,
   };
 }

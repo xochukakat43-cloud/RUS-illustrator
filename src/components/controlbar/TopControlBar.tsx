@@ -12,6 +12,9 @@ import {
   Maximize2,
   Grid,
   Magnet,
+  Ruler,
+  Sparkles,
+  Split,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -20,17 +23,21 @@ import {
   AlignVerticalJustifyEnd,
 } from 'lucide-react';
 import type { Editor } from '../../core/Editor';
-import type { ActiveStyle, GridConfig, SelectionInfo, ViewportState } from '../../core/types';
+import type { ActiveStyle, GridConfig, GuidesConfig, SelectionInfo, ViewportState } from '../../core/types';
 
 interface TopControlBarProps {
   editor: Editor | null;
   viewport: ViewportState;
   gridConfig: GridConfig;
+  guidesConfig: GuidesConfig;
   selection: SelectionInfo;
   activeStyle: ActiveStyle;
   historyState: { canUndo: boolean; canRedo: boolean };
   onToggleGrid: () => void;
   onToggleSnapToGrid: () => void;
+  onToggleRulers: () => void;
+  onToggleGuides: () => void;
+  onToggleSmartGuides: () => void;
   onOpenExportModal: () => void;
   onOpenColorPicker: (type: 'fill' | 'stroke') => void;
 }
@@ -39,11 +46,15 @@ export const TopControlBar: React.FC<TopControlBarProps> = ({
   editor,
   viewport,
   gridConfig,
+  guidesConfig,
   selection,
   activeStyle,
   historyState,
   onToggleGrid,
   onToggleSnapToGrid,
+  onToggleRulers,
+  onToggleGuides,
+  onToggleSmartGuides,
   onOpenExportModal,
   onOpenColorPicker,
 }) => {
@@ -280,7 +291,7 @@ export const TopControlBar: React.FC<TopControlBarProps> = ({
 
       {/* Right Section: Grid, Snap, Zoom & Export */}
       <div className="flex items-center gap-2">
-        {/* Grid & Snap Buttons */}
+        {/* Grid, Snap, Rulers & Guides Buttons */}
         <div className="flex items-center gap-0.5 bg-ai-darker p-0.5 rounded border border-ai-border">
           <button
             onClick={onToggleGrid}
@@ -303,6 +314,39 @@ export const TopControlBar: React.FC<TopControlBarProps> = ({
             }`}
           >
             <Magnet size={14} />
+          </button>
+          <button
+            onClick={onToggleRulers}
+            title={`Линейки (Ctrl+R) [${guidesConfig.showRulers ? 'Включены' : 'Выключены'}]`}
+            className={`p-1.5 rounded transition-colors ${
+              guidesConfig.showRulers
+                ? 'bg-ai-accent text-white shadow-xs'
+                : 'text-ai-textMuted hover:bg-ai-hover hover:text-ai-textLight'
+            }`}
+          >
+            <Ruler size={14} />
+          </button>
+          <button
+            onClick={onToggleSmartGuides}
+            title={`Умные направляющие (Ctrl+U) [${guidesConfig.smartGuides ? 'Включены' : 'Выключены'}]`}
+            className={`p-1.5 rounded transition-colors ${
+              guidesConfig.smartGuides
+                ? 'bg-ai-accent text-white shadow-xs'
+                : 'text-ai-textMuted hover:bg-ai-hover hover:text-ai-textLight'
+            }`}
+          >
+            <Sparkles size={14} />
+          </button>
+          <button
+            onClick={onToggleGuides}
+            title={`Направляющие линии (Ctrl+;) [${guidesConfig.showGuides ? 'Включены' : 'Выключены'}]`}
+            className={`p-1.5 rounded transition-colors ${
+              guidesConfig.showGuides
+                ? 'bg-ai-accent text-white shadow-xs'
+                : 'text-ai-textMuted hover:bg-ai-hover hover:text-ai-textLight'
+            }`}
+          >
+            <Split size={14} />
           </button>
         </div>
 

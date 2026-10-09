@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import type { ArtboardConfig, ToolType, ViewportState } from '../../core/types';
+import React, { useEffect, useRef } from 'react';
+import type { Editor } from '../../core/Editor';
+import type { ArtboardConfig, GuidesConfig, ToolType, ViewportState } from '../../core/types';
+import { RulerView } from './RulerView';
 
 interface CanvasViewProps {
+  editor: Editor | null;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   activeTool: ToolType;
   viewport: ViewportState;
   artboard: ArtboardConfig;
+  guidesConfig: GuidesConfig;
 }
 
 const TOOL_NAMES: Record<ToolType, string> = {
@@ -20,43 +24,42 @@ const TOOL_NAMES: Record<ToolType, string> = {
   polygon: 'Многоугольник (Polygon Tool)',
   star: 'Звезда (Star Tool)',
   line: 'Отрезок (Line)',
+  gradient: 'Градиент (Gradient Tool)',
   pan: 'Панорамирование (Hand Tool)',
   zoom: 'Масштаб (Zoom Tool)',
 };
 
 export const CanvasView: React.FC<CanvasViewProps> = ({
+  editor,
   canvasRef,
   activeTool,
   viewport,
   artboard,
+  guidesConfig,
 }) => {
-  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const coordsRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const handleMouseMove = (e: MouseEvent) => {
+      if (!editor) return;
       const rect = canvas.getBoundingClientRect();
       const screenX = e.clientX - rect.left;
       const screenY = e.clientY - rect.top;
 
-      // Calculate artboard coordinates
-      const zoom = viewport.zoom || 1;
-      const panX = viewport.panX || 0;
-      const panY = viewport.panY || 0;
-
-      // Project coord = (screen - screenCenter) / zoom + viewCenter
-      const screenCenterX = rect.width / 2;
-      const screenCenterY = rect.height / 2;
-      const projX = Math.round((screenX - screenCenterX) / zoom + panX);
-      const projY = Math.round((screenY - screenCenterY) / zoom + panY);
-
-      setMousePos({ x: projX, y: projY });
+      const proj = editor.viewport.screenToProject(new editor.scope.Point(screenX, screenY));
+      if (coordsRef.current) {
+        coordsRef.current.textContent = `X: ${Math.round(proj.x)} px   Y: ${Math.round(proj.y)} px`;
+      }
     };
 
     const handleMouseLeave = () => {
-      setMousePos(null);
+      if (coordsRef.current) {
+        coordsRef.current.textContent = '';
+      }
     };
 
     canvas.addEventListener('mousemove', handleMouseMove);
@@ -66,17 +69,40 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [canvasRef, viewport]);
+  }, [canvasRef, editor]);
+
+  const showRulers = guidesConfig?.showRulers ?? true;
+  const rulerOffset = showRulers ? 20 : 0;
 
   return (
     <div className="relative flex-1 flex flex-col h-full overflow-hidden bg-ai-darkest select-none">
-      {/* Canvas container */}
-      <div className="relative flex-1 w-full h-full overflow-hidden select-none">
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full block focus:outline-none select-none"
-          tabIndex={0}
-        />
+      {/* Workspace container */}
+      <div ref={containerRef} className="relative flex-1 w-full h-full overflow-hidden select-none bg-ai-darkest">
+        {showRulers && (
+          <RulerView
+            editor={editor}
+            viewport={viewport}
+            containerRef={containerRef}
+            canvasRef={canvasRef}
+          />
+        )}
+
+        {/* Canvas container */}
+        <div
+          className="absolute overflow-hidden select-none"
+          style={{
+            top: rulerOffset,
+            left: rulerOffset,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full block focus:outline-none select-none"
+            tabIndex={0}
+          />
+        </div>
       </div>
 
       {/* Bottom Status Bar */}
@@ -91,11 +117,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
 
         <div className="flex items-center gap-4 font-mono">
-          {mousePos && (
-            <span>
-              X: {mousePos.x} px &nbsp; Y: {mousePos.y} px
-            </span>
-          )}
+          <span ref={coordsRef} />
           <span>{Math.round(viewport.zoom * 100)}%</span>
         </div>
       </footer>

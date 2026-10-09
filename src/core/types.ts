@@ -10,6 +10,7 @@ export type ToolType =
   | 'polygon'
   | 'star'
   | 'line' 
+  | 'gradient'
   | 'pan' 
   | 'zoom';
 
@@ -26,10 +27,37 @@ export interface GridConfig {
   gridSize: number;
 }
 
+export interface ManualGuide {
+  id: string;
+  orientation: 'horizontal' | 'vertical';
+  coord: number;
+}
+
+export interface GuidesConfig {
+  showRulers: boolean;
+  showGuides: boolean;
+  lockGuides: boolean;
+  smartGuides: boolean;
+  snapToGuides: boolean;
+}
+
+
 export interface ViewportState {
   zoom: number;
   panX: number;
   panY: number;
+}
+
+export interface GradientStop {
+  color: string;
+  offset: number; // 0 to 1
+}
+
+export interface GradientDef {
+  type: 'linear' | 'radial';
+  stops: GradientStop[];
+  origin?: { x: number; y: number };
+  destination?: { x: number; y: number };
 }
 
 export interface ActiveStyle {
@@ -44,6 +72,7 @@ export interface ActiveStyle {
   fontSize: number;
   fontWeight: 'normal' | 'bold';
   fontStyle: 'normal' | 'italic';
+  gradient?: GradientDef | null;
 }
 
 export interface SelectionBounds {
@@ -71,6 +100,7 @@ export interface SelectionInfo {
   fontSize?: number;
   fontWeight?: string;
   fontStyle?: string;
+  gradient?: GradientDef | null;
 }
 
 export interface DirectSelectionInfo {

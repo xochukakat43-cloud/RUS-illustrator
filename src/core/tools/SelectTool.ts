@@ -113,10 +113,38 @@ export class SelectTool extends Tool {
       }
 
       const activeSelected = this.editor.selectionManager.getSelectedItems();
+      if (activeSelected.length === 0) return;
+
+      const unionBounds = this.getUnionBounds(activeSelected);
+
+      // Smart Guides snapping
+      const guidesConfig = this.editor.getGuidesConfig();
+      if (guidesConfig.smartGuides && unionBounds) {
+        const mainChildren = this.editor.getMainLayer().children.filter(
+          (c) => !c.selected && !(c instanceof paper.Layer)
+        );
+        const artboardBounds = this.editor.viewport.getArtboardBounds();
+        const zoom = this.editor.viewport.getZoom();
+        const manualGuides = guidesConfig.snapToGuides ? this.editor.getManualGuides() : [];
+
+        const snapResult = this.editor.smartGuides.calculateSnap(
+          unionBounds,
+          delta,
+          mainChildren,
+          artboardBounds,
+          zoom,
+          { manualGuides }
+        );
+
+        delta = snapResult.delta;
+        this.editor.smartGuides.renderGuides(this.editor.getOverlayLayer(), snapResult.guideLines, zoom);
+      }
+
       activeSelected.forEach((item) => {
         item.position = item.position.add(delta);
       });
-      this.editor.selectionManager.updateSelection();
+      // 60 FPS: update handles on canvas directly without spamming React state
+      this.editor.renderOverlay();
     } else if (this.mode === 'marquee') {
       // Update marquee selection rectangle
       if (this.marqueeBox) {
@@ -154,15 +182,18 @@ export class SelectTool extends Tool {
   public override onMouseUp(event: paper.ToolEvent): void {
     const prevMode = this.mode;
 
+    this.editor.smartGuides.clearGuides();
+
     if (this.marqueeBox) {
       this.marqueeBox.remove();
       this.marqueeBox = null;
     }
 
-    if (prevMode === 'marquee') {
+    if (prevMode === 'marquee' || prevMode === 'move' || prevMode === 'scale' || prevMode === 'rotate') {
       this.editor.selectionManager.updateSelection();
-    } else if (prevMode === 'move' || prevMode === 'scale' || prevMode === 'rotate') {
-      this.editor.history.pushState();
+      if (prevMode !== 'marquee') {
+        this.editor.history.pushState();
+      }
     }
 
     this.mode = 'none';
@@ -170,6 +201,15 @@ export class SelectTool extends Tool {
     this.activeHandle = null;
     this.initialItemsBounds = null;
     this.duplicateMade = false;
+  }
+
+  public override deactivate(): void {
+    super.deactivate();
+    this.editor.smartGuides.clearGuides();
+    if (this.marqueeBox) {
+      this.marqueeBox.remove();
+      this.marqueeBox = null;
+    }
   }
 
   private hitTestOverlay(point: paper.Point): { mode: TransformMode; handle: string } | null {
@@ -293,7 +333,7 @@ export class SelectTool extends Tool {
       item.scale(sx, sy, anchor);
     });
 
-    this.editor.selectionManager.updateSelection();
+    this.editor.renderOverlay();
   }
 
   private handleRotate(event: paper.ToolEvent): void {
@@ -307,7 +347,7 @@ export class SelectTool extends Tool {
     selected.forEach((item) => {
       item.rotate(angleDelta, center);
     });
-    this.editor.selectionManager.updateSelection();
+    this.editor.renderOverlay();
   }
 
   private getUnionBounds(items: paper.Item[]): paper.Rectangle {
