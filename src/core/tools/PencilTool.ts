@@ -12,9 +12,10 @@ export class PencilTool extends Tool {
     this.editor.selectionManager.clearSelection();
     const style = this.editor.getActiveStyle();
 
+    // A freehand pencil stroke must not have an open polygon fill
     this.currentPath = new paper.Path({
       strokeColor: style.strokeColor || '#000000',
-      fillColor: style.fillColor || undefined,
+      fillColor: null as any,
       strokeWidth: style.strokeWidth || 2,
       strokeCap: style.strokeCap || 'round',
       strokeJoin: style.strokeJoin || 'round',
@@ -40,9 +41,22 @@ export class PencilTool extends Tool {
     if (this.currentPath.segments.length < 2) {
       this.currentPath.remove();
     } else {
-      // Smooth and simplify path to produce clean organic Bezier curves
-      this.currentPath.simplify(10);
-      this.currentPath.smooth({ type: 'continuous' });
+      const zoom = this.editor.viewport.getZoom();
+      const firstPoint = this.currentPath.firstSegment.point;
+      const lastPoint = this.currentPath.lastSegment.point;
+
+      // If user drew a loop and released near the start point, close it
+      if (firstPoint.getDistance(lastPoint) <= 14 / zoom) {
+        this.currentPath.closed = true;
+        const style = this.editor.getActiveStyle();
+        if (style.fillColor) {
+          this.currentPath.fillColor = new paper.Color(style.fillColor);
+        }
+      }
+
+      // Smooth path with standard Illustrator tolerance without over-distorting
+      this.currentPath.simplify(2.5);
+
       this.currentPath.selected = true;
       this.editor.selectionManager.updateSelection();
       this.editor.history.pushState();

@@ -17,6 +17,7 @@ const TOOL_NAMES: Record<ToolType, string> = {
   'direct-select': 'Прямое выделение узлов (Direct Selection)',
   pen: 'Перо Безье (Pen Tool)',
   pencil: 'Карандаш / Свободная кисть (Pencil)',
+  eraser: 'Ластик (Eraser Tool)',
   text: 'Текст (Type Tool)',
   eyedropper: 'Пипетка (Eyedropper)',
   rectangle: 'Прямоугольник (Rectangle)',

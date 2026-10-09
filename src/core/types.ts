@@ -3,6 +3,7 @@ export type ToolType =
   | 'direct-select' 
   | 'pen' 
   | 'pencil'
+  | 'eraser'
   | 'text'
   | 'eyedropper'
   | 'rectangle' 

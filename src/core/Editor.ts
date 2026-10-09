@@ -17,6 +17,7 @@ import { SelectTool } from './tools/SelectTool';
 import { DirectSelectTool } from './tools/DirectSelectTool';
 import { PenTool } from './tools/PenTool';
 import { PencilTool } from './tools/PencilTool';
+import { EraserTool } from './tools/EraserTool';
 import { TextTool } from './tools/TextTool';
 import { EyedropperTool } from './tools/EyedropperTool';
 import { EllipseTool, LineTool, PolygonTool, RectangleTool, StarTool } from './tools/ShapeTools';
@@ -146,6 +147,7 @@ export class Editor {
     this.tools.set('direct-select', new DirectSelectTool(this));
     this.tools.set('pen', new PenTool(this));
     this.tools.set('pencil', new PencilTool(this));
+    this.tools.set('eraser', new EraserTool(this));
     this.tools.set('text', new TextTool(this));
     this.tools.set('eyedropper', new EyedropperTool(this));
     this.tools.set('rectangle', new RectangleTool(this));
@@ -831,6 +833,13 @@ export class Editor {
         return;
       }
 
+      // Shift+E: Eraser Tool (Illustrator shortcut)
+      if (e.shiftKey && (e.key === 'E' || e.key === 'e')) {
+        e.preventDefault();
+        this.setTool('eraser');
+        return;
+      }
+
       // Tool shortcuts (Illustrator single keys)
       if (!e.ctrlKey && !e.metaKey && !e.altKey) {
         switch (e.key.toLowerCase()) {
@@ -845,6 +854,9 @@ export class Editor {
             break;
           case 'n':
             this.setTool('pencil');
+            break;
+          case 'e':
+            this.setTool('eraser');
             break;
           case 't':
             this.setTool('text');
