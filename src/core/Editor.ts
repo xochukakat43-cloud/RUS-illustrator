@@ -18,6 +18,9 @@ import { DirectSelectTool } from './tools/DirectSelectTool';
 import { PenTool } from './tools/PenTool';
 import { PencilTool } from './tools/PencilTool';
 import { EraserTool } from './tools/EraserTool';
+import { ScissorsTool } from './tools/ScissorsTool';
+import { ShapeBuilderTool } from './tools/ShapeBuilderTool';
+import { ArtboardTool } from './tools/ArtboardTool';
 import { TextTool } from './tools/TextTool';
 import { EyedropperTool } from './tools/EyedropperTool';
 import { EllipseTool, LineTool, PolygonTool, RectangleTool, StarTool } from './tools/ShapeTools';
@@ -51,7 +54,7 @@ export class Editor {
   public readonly selectionManager: SelectionManager;
   public readonly smartGuides: SmartGuidesEngine;
 
-  private canvas: HTMLCanvasElement;
+  public readonly canvas: HTMLCanvasElement;
   private artboardLayer: paper.Layer;
   private mainLayer: paper.Layer;
   private overlayLayer: paper.Layer;
@@ -148,6 +151,9 @@ export class Editor {
     this.tools.set('pen', new PenTool(this));
     this.tools.set('pencil', new PencilTool(this));
     this.tools.set('eraser', new EraserTool(this));
+    this.tools.set('scissors', new ScissorsTool(this));
+    this.tools.set('shape-builder', new ShapeBuilderTool(this));
+    this.tools.set('artboard', new ArtboardTool(this));
     this.tools.set('text', new TextTool(this));
     this.tools.set('eyedropper', new EyedropperTool(this));
     this.tools.set('rectangle', new RectangleTool(this));
@@ -208,6 +214,25 @@ export class Editor {
     }
     if (style.opacity !== undefined) {
       this.selectionManager.applyOpacity(style.opacity);
+    }
+    if (style.dashArray !== undefined) {
+      this.selectionManager.applyDashArray(style.dashArray);
+    }
+    if (style.blendMode !== undefined) {
+      this.selectionManager.applyBlendMode(style.blendMode);
+    }
+    if (
+      style.shadowColor !== undefined ||
+      style.shadowBlur !== undefined ||
+      style.shadowOffsetX !== undefined ||
+      style.shadowOffsetY !== undefined
+    ) {
+      this.selectionManager.applyShadow(
+        this.activeStyle.shadowColor ?? null,
+        this.activeStyle.shadowBlur ?? 0,
+        this.activeStyle.shadowOffsetX ?? 0,
+        this.activeStyle.shadowOffsetY ?? 0
+      );
     }
 
     this.callbacks.onStyleChange?.(this.activeStyle);
@@ -333,52 +358,68 @@ export class Editor {
     this.artboardLayer.activate();
     this.artboardLayer.removeChildren();
 
-    const bounds = this.viewport.getArtboardBounds();
-    const config = this.viewport.getArtboard();
+    const artboards = this.viewport.getArtboards();
+    const activeIndex = this.viewport.getActiveArtboardIndex();
 
-    // Subtle drop shadow behind artboard
-    this.artboardShadow = new this.scope.Path.Rectangle({
-      point: [bounds.x + 4, bounds.y + 4],
-      size: [bounds.width, bounds.height],
-      fillColor: new this.scope.Color(0, 0, 0, 0.35),
-    });
+    artboards.forEach((ab, idx) => {
+      const bounds = new this.scope.Rectangle(ab.x ?? 0, ab.y ?? 0, ab.width, ab.height);
+      const isActive = idx === activeIndex;
 
-    // Artboard canvas background
-    this.artboardRect = new this.scope.Path.Rectangle({
-      rectangle: bounds,
-      fillColor: new this.scope.Color(config.backgroundColor || '#ffffff'),
-      strokeColor: new this.scope.Color(0.2, 0.2, 0.2, 0.8),
-      strokeWidth: 1,
-    });
+      // Drop shadow behind artboard
+      new this.scope.Path.Rectangle({
+        point: [bounds.x + 4, bounds.y + 4],
+        size: [bounds.width, bounds.height],
+        fillColor: new this.scope.Color(0, 0, 0, 0.35),
+      });
 
-    // Grid rendering (crisp grid lines aligned with artboard)
-    if (this.gridConfig.showGrid) {
-      const step = this.gridConfig.gridSize;
-      const gridGroup = new this.scope.Group();
-      gridGroup.name = 'grid-guides';
+      // Artboard canvas background
+      const rect = new this.scope.Path.Rectangle({
+        rectangle: bounds,
+        fillColor: new this.scope.Color(ab.backgroundColor || '#ffffff'),
+        strokeColor: isActive ? new this.scope.Color(0.2, 0.5, 0.9, 0.8) : new this.scope.Color(0.2, 0.2, 0.2, 0.8),
+        strokeWidth: isActive ? 1.5 : 1,
+      });
 
-      // Vertical lines
-      for (let x = bounds.left; x <= bounds.right; x += step) {
-        const line = new this.scope.Path.Line({
-          from: [x, bounds.top],
-          to: [x, bounds.bottom],
-          strokeColor: new this.scope.Color(0, 0, 0, 0.08),
-          strokeWidth: 1,
-        });
-        gridGroup.addChild(line);
+      if (isActive) {
+        this.artboardRect = rect;
       }
 
-      // Horizontal lines
-      for (let y = bounds.top; y <= bounds.bottom; y += step) {
-        const line = new this.scope.Path.Line({
-          from: [bounds.left, y],
-          to: [bounds.right, y],
-          strokeColor: new this.scope.Color(0, 0, 0, 0.08),
-          strokeWidth: 1,
-        });
-        gridGroup.addChild(line);
+      // Title tag above top-left
+      new this.scope.PointText({
+        point: [bounds.left + 4, bounds.top - 6],
+        content: `${ab.name} (${ab.width} × ${ab.height})`,
+        fillColor: isActive ? new this.scope.Color(0.3, 0.6, 1) : new this.scope.Color(0.5, 0.5, 0.5),
+        fontSize: 11,
+        fontFamily: 'Inter, sans-serif',
+      });
+
+      // Grid rendering on active artboard
+      if (isActive && this.gridConfig.showGrid) {
+        const step = this.gridConfig.gridSize;
+        const gridGroup = new this.scope.Group();
+        gridGroup.name = 'grid-guides';
+
+        for (let x = bounds.left; x <= bounds.right; x += step) {
+          const line = new this.scope.Path.Line({
+            from: [x, bounds.top],
+            to: [x, bounds.bottom],
+            strokeColor: new this.scope.Color(0, 0, 0, 0.08),
+            strokeWidth: 1,
+          });
+          gridGroup.addChild(line);
+        }
+
+        for (let y = bounds.top; y <= bounds.bottom; y += step) {
+          const line = new this.scope.Path.Line({
+            from: [bounds.left, y],
+            to: [bounds.right, y],
+            strokeColor: new this.scope.Color(0, 0, 0, 0.08),
+            strokeWidth: 1,
+          });
+          gridGroup.addChild(line);
+        }
       }
-    }
+    });
 
     this.mainLayer.activate();
   }
@@ -644,7 +685,12 @@ export class Editor {
   }
 
   public async saveProjectFile(): Promise<void> {
-    const json = Serializer.serialize(this.viewport.getArtboard(), this.mainLayer);
+    const json = Serializer.serialize(
+      this.viewport.getArtboard(),
+      this.mainLayer,
+      this.viewport.getArtboards(),
+      this.viewport.getActiveArtboardIndex()
+    );
     const fileName = `${this.viewport.getArtboard().name}.ai.json`;
     if (window.electronAPI?.isElectron) {
       await window.electronAPI.saveFileDialog({
@@ -672,7 +718,7 @@ export class Editor {
 
   public loadProjectFile(jsonString: string): void {
     const restored = Serializer.deserialize(jsonString, this.scope, this.mainLayer);
-    this.viewport.setArtboard(restored.artboard);
+    this.viewport.setArtboards(restored.artboards, restored.activeArtboardIndex);
     this.renderArtboard();
     this.viewport.fitArtboard();
     this.history.clear();
@@ -862,6 +908,20 @@ export class Editor {
         return;
       }
 
+      // Shift+O: Artboard Tool (Illustrator shortcut)
+      if (e.shiftKey && (e.key === 'O' || e.key === 'o')) {
+        e.preventDefault();
+        this.setTool('artboard');
+        return;
+      }
+
+      // Shift+M: Shape Builder Tool (Illustrator shortcut)
+      if (e.shiftKey && (e.key === 'M' || e.key === 'm')) {
+        e.preventDefault();
+        this.setTool('shape-builder');
+        return;
+      }
+
       // Tool shortcuts (Illustrator single keys)
       if (!e.ctrlKey && !e.metaKey && !e.altKey) {
         switch (e.key.toLowerCase()) {
@@ -876,6 +936,9 @@ export class Editor {
             break;
           case 'n':
             this.setTool('pencil');
+            break;
+          case 'c':
+            this.setTool('scissors');
             break;
           case 'e':
             this.setTool('eraser');

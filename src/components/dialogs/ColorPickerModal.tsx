@@ -119,8 +119,6 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
   title,
   allowGradient = true,
 }) => {
-  if (!isOpen) return null;
-
   const [activeTab, setActiveTab] = useState<'solid' | 'gradient'>(
     currentGradient ? 'gradient' : 'solid'
   );
@@ -139,6 +137,8 @@ export const ColorPickerModal: React.FC<ColorPickerModalProps> = ({
         ]
   );
   const [activeStopIndex, setActiveStopIndex] = useState(0);
+
+  if (!isOpen) return null;
 
   const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setHexValue(e.target.value);

@@ -140,6 +140,11 @@ export class SelectionManager {
       strokeWidth: firstItem.strokeWidth || 0,
       dashArray: firstItem.dashArray ? [...firstItem.dashArray] : null,
       opacity: firstItem.opacity ?? 1,
+      blendMode: (firstItem as any).blendMode || 'normal',
+      shadowColor: firstItem.shadowColor ? firstItem.shadowColor.toCSS(true) : null,
+      shadowBlur: firstItem.shadowBlur || 0,
+      shadowOffsetX: firstItem.shadowOffset ? firstItem.shadowOffset.x : 0,
+      shadowOffsetY: firstItem.shadowOffset ? firstItem.shadowOffset.y : 0,
       isPath: firstItem instanceof paper.Path,
       isGroup: firstItem instanceof paper.Group,
       isText,
@@ -275,6 +280,41 @@ export class SelectionManager {
     this.editor.history.pushState();
   }
 
+  public applyDashArray(dashArray: number[] | null): void {
+    const items = this.getSelectedItems();
+    if (items.length === 0) return;
+
+    items.forEach((item) => {
+      item.dashArray = dashArray && dashArray.length > 0 ? dashArray : [];
+    });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyBlendMode(blendMode: string): void {
+    const items = this.getSelectedItems();
+    if (items.length === 0) return;
+
+    items.forEach((item) => {
+      (item as any).blendMode = blendMode;
+    });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
+  public applyShadow(shadowColor: string | null, blur: number = 0, offsetX: number = 0, offsetY: number = 0): void {
+    const items = this.getSelectedItems();
+    if (items.length === 0) return;
+
+    items.forEach((item) => {
+      item.shadowColor = shadowColor ? new paper.Color(shadowColor) : null as any;
+      item.shadowBlur = blur;
+      item.shadowOffset = new paper.Point(offsetX, offsetY);
+    });
+    this.updateSelection();
+    this.editor.history.pushState();
+  }
+
   public applyCornerRadius(radius: number): void {
     const items = this.getSelectedItems();
     if (items.length === 0) return;
@@ -355,15 +395,6 @@ export class SelectionManager {
       if (item instanceof paper.PointText) {
         item.fontWeight = weight;
       }
-    });
-    this.updateSelection();
-    this.editor.history.pushState();
-  }
-
-  public applyDashArray(dashArray: number[] | null): void {
-    const items = this.getSelectedItems();
-    items.forEach((item) => {
-      item.dashArray = dashArray || [];
     });
     this.updateSelection();
     this.editor.history.pushState();

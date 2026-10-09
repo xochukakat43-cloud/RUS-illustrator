@@ -8,7 +8,7 @@ export class Exporter {
     // Clone main layer or export directly with bounds
     const svgElement = mainLayer.exportSVG({
       asString: false,
-      bounds: new scope.Rectangle(0, 0, artboard.width, artboard.height),
+      bounds: new scope.Rectangle(artboard.x ?? 0, artboard.y ?? 0, artboard.width, artboard.height),
       precision: 5,
     }) as SVGElement;
 

@@ -4,6 +4,9 @@ export type ToolType =
   | 'pen' 
   | 'pencil'
   | 'eraser'
+  | 'scissors'
+  | 'shape-builder'
+  | 'artboard'
   | 'text'
   | 'eyedropper'
   | 'rectangle' 
@@ -16,6 +19,9 @@ export type ToolType =
   | 'zoom';
 
 export interface ArtboardConfig {
+  id?: string;
+  x?: number;
+  y?: number;
   width: number;
   height: number;
   backgroundColor: string;
@@ -74,6 +80,11 @@ export interface ActiveStyle {
   fontWeight: 'normal' | 'bold';
   fontStyle: 'normal' | 'italic';
   gradient?: GradientDef | null;
+  blendMode?: string;
+  shadowColor?: string | null;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
 }
 
 export interface SelectionBounds {
@@ -92,6 +103,11 @@ export interface SelectionInfo {
   strokeWidth: number | null;
   dashArray: number[] | null;
   opacity: number | null;
+  blendMode?: string | null;
+  shadowColor?: string | null;
+  shadowBlur?: number | null;
+  shadowOffsetX?: number | null;
+  shadowOffsetY?: number | null;
   isPath: boolean;
   isGroup: boolean;
   isText: boolean;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CornerDownRight, Spline, Type, Bold, Italic, Radius } from 'lucide-react';
+import { CornerDownRight, Spline, Type, Bold, Radius } from 'lucide-react';
 import type { ActiveStyle, DirectSelectionInfo, SelectionInfo } from '../../core/types';
 import type { Editor } from '../../core/Editor';
 
@@ -313,49 +313,102 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           </div>
 
           {/* Stroke Dash Style */}
-          <div className="flex items-center justify-between pt-1 border-t border-ai-border/50">
-            <span className="text-ai-textLight font-medium">Тип линии:</span>
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => {
-                  editor.setActiveStyle({ dashArray: [] });
-                  editor.selectionManager.applyDashArray([]);
-                }}
-                className={`px-2 py-0.5 rounded border text-[10px] ${
-                  !activeStyle.dashArray || activeStyle.dashArray.length === 0
-                    ? 'bg-ai-accent border-ai-accent text-white'
-                    : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
-                }`}
-              >
-                Сплошная
-              </button>
-              <button
-                onClick={() => {
-                  editor.setActiveStyle({ dashArray: [8, 6] });
-                  editor.selectionManager.applyDashArray([8, 6]);
-                }}
-                className={`px-2 py-0.5 rounded border text-[10px] ${
-                  activeStyle.dashArray && activeStyle.dashArray.length > 0 && activeStyle.dashArray[0] === 8
-                    ? 'bg-ai-accent border-ai-accent text-white'
-                    : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
-                }`}
-              >
-                Пунктир
-              </button>
-              <button
-                onClick={() => {
-                  editor.setActiveStyle({ dashArray: [2, 5] });
-                  editor.selectionManager.applyDashArray([2, 5]);
-                }}
-                className={`px-2 py-0.5 rounded border text-[10px] ${
-                  activeStyle.dashArray && activeStyle.dashArray.length > 0 && activeStyle.dashArray[0] === 2
-                    ? 'bg-ai-accent border-ai-accent text-white'
-                    : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
-                }`}
-              >
-                Точки
-              </button>
+          <div className="flex flex-col gap-1.5 pt-1 border-t border-ai-border/50">
+            <div className="flex items-center justify-between">
+              <span className="text-ai-textLight font-medium">Тип линии:</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => {
+                    editor.setActiveStyle({ dashArray: [] });
+                    editor.selectionManager.applyDashArray([]);
+                  }}
+                  className={`px-1.5 py-0.5 rounded border text-[10px] ${
+                    !activeStyle.dashArray || activeStyle.dashArray.length === 0
+                      ? 'bg-ai-accent border-ai-accent text-white'
+                      : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
+                  }`}
+                >
+                  Сплошная
+                </button>
+                <button
+                  onClick={() => {
+                    editor.setActiveStyle({ dashArray: [8, 6] });
+                    editor.selectionManager.applyDashArray([8, 6]);
+                  }}
+                  className={`px-1.5 py-0.5 rounded border text-[10px] ${
+                    activeStyle.dashArray && activeStyle.dashArray.length > 0 && activeStyle.dashArray[0] === 8
+                      ? 'bg-ai-accent border-ai-accent text-white'
+                      : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
+                  }`}
+                >
+                  Пунктир
+                </button>
+                <button
+                  onClick={() => {
+                    editor.setActiveStyle({ dashArray: [2, 5] });
+                    editor.selectionManager.applyDashArray([2, 5]);
+                  }}
+                  className={`px-1.5 py-0.5 rounded border text-[10px] ${
+                    activeStyle.dashArray && activeStyle.dashArray.length > 0 && activeStyle.dashArray[0] === 2
+                      ? 'bg-ai-accent border-ai-accent text-white'
+                      : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
+                  }`}
+                >
+                  Точки
+                </button>
+                <button
+                  onClick={() => {
+                    editor.setActiveStyle({ dashArray: [12, 4, 3, 4] });
+                    editor.selectionManager.applyDashArray([12, 4, 3, 4]);
+                  }}
+                  className={`px-1.5 py-0.5 rounded border text-[10px] ${
+                    activeStyle.dashArray && activeStyle.dashArray.length > 0 && activeStyle.dashArray[0] === 12
+                      ? 'bg-ai-accent border-ai-accent text-white'
+                      : 'bg-ai-darkest border-ai-border text-ai-textMuted hover:text-ai-textLight'
+                  }`}
+                >
+                  Штрих-пунктир
+                </button>
+              </div>
             </div>
+
+            {/* Custom Dash & Gap Inputs */}
+            {activeStyle.dashArray && activeStyle.dashArray.length > 0 && (
+              <div className="flex items-center justify-end gap-2 text-[10px] text-ai-textMuted">
+                <div className="flex items-center gap-1">
+                  <span>Штрих:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={activeStyle.dashArray[0] || 8}
+                    onChange={(e) => {
+                      const d = Math.max(1, parseInt(e.target.value) || 1);
+                      const g = activeStyle.dashArray?.[1] || 6;
+                      editor.setActiveStyle({ dashArray: [d, g] });
+                      editor.selectionManager.applyDashArray([d, g]);
+                    }}
+                    className="w-10 bg-ai-darkest px-1.5 py-0.5 rounded border border-ai-border text-ai-textLight text-right"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>Зазор:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={activeStyle.dashArray[1] || 6}
+                    onChange={(e) => {
+                      const d = activeStyle.dashArray?.[0] || 8;
+                      const g = Math.max(1, parseInt(e.target.value) || 1);
+                      editor.setActiveStyle({ dashArray: [d, g] });
+                      editor.selectionManager.applyDashArray([d, g]);
+                    }}
+                    className="w-10 bg-ai-darkest px-1.5 py-0.5 rounded border border-ai-border text-ai-textLight text-right"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Opacity */}
@@ -375,6 +428,142 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 {Math.round(activeStyle.opacity * 100)}%
               </span>
             </div>
+          </div>
+
+          {/* Blend Mode */}
+          <div className="flex items-center justify-between pt-1 border-t border-ai-border/50">
+            <span className="text-ai-textLight font-medium">Режим наложения:</span>
+            <select
+              value={selection.blendMode || activeStyle.blendMode || 'normal'}
+              onChange={(e) => {
+                editor.setActiveStyle({ blendMode: e.target.value });
+                editor.selectionManager.applyBlendMode(e.target.value);
+              }}
+              className="bg-ai-darkest text-ai-textLight border border-ai-border text-[11px] rounded px-2 py-0.5 outline-none focus:border-ai-accent w-36"
+            >
+              <option value="normal">Normal (Обычный)</option>
+              <option value="multiply">Multiply (Умножение)</option>
+              <option value="screen">Screen (Осветление)</option>
+              <option value="overlay">Overlay (Перекрытие)</option>
+              <option value="darken">Darken (Затемнение)</option>
+              <option value="lighten">Lighten (Замена светлым)</option>
+              <option value="color-dodge">Color Dodge</option>
+              <option value="color-burn">Color Burn</option>
+              <option value="hard-light">Hard Light</option>
+              <option value="soft-light">Soft Light</option>
+              <option value="difference">Difference (Разница)</option>
+              <option value="exclusion">Exclusion</option>
+            </select>
+          </div>
+
+          {/* Drop Shadow */}
+          <div className="flex flex-col gap-2 pt-1 border-t border-ai-border/50">
+            <div className="flex items-center justify-between">
+              <span className="text-ai-textLight font-medium">Тень объекта (Drop Shadow):</span>
+              <input
+                type="checkbox"
+                checked={!!(selection.shadowColor || activeStyle.shadowColor)}
+                onChange={(e) => {
+                  const enable = e.target.checked;
+                  const col = enable ? '#00000088' : null;
+                  const blur = enable ? 12 : 0;
+                  const ox = enable ? 4 : 0;
+                  const oy = enable ? 4 : 0;
+                  editor.setActiveStyle({
+                    shadowColor: col,
+                    shadowBlur: blur,
+                    shadowOffsetX: ox,
+                    shadowOffsetY: oy,
+                  });
+                  editor.selectionManager.applyShadow(col, blur, ox, oy);
+                }}
+                className="w-3.5 h-3.5 accent-ai-accent cursor-pointer"
+              />
+            </div>
+
+            {!!(selection.shadowColor || activeStyle.shadowColor) && (
+              <div className="flex flex-col gap-2 bg-ai-darkest/70 p-2 rounded border border-ai-border/70 text-[11px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-ai-textMuted">Цвет тени:</span>
+                  <input
+                    type="color"
+                    value={activeStyle.shadowColor ? activeStyle.shadowColor.substring(0, 7) : '#000000'}
+                    onChange={(e) => {
+                      const col = e.target.value;
+                      editor.setActiveStyle({ shadowColor: col });
+                      editor.selectionManager.applyShadow(
+                        col,
+                        activeStyle.shadowBlur || 12,
+                        activeStyle.shadowOffsetX || 4,
+                        activeStyle.shadowOffsetY || 4
+                      );
+                    }}
+                    className="w-5 h-5 rounded border border-ai-border cursor-pointer bg-transparent"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-ai-textMuted">Размытие (Blur):</span>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={activeStyle.shadowBlur ?? 12}
+                      onChange={(e) => {
+                        const blur = Math.max(0, parseInt(e.target.value) || 0);
+                        editor.setActiveStyle({ shadowBlur: blur });
+                        editor.selectionManager.applyShadow(
+                          activeStyle.shadowColor || '#000000',
+                          blur,
+                          activeStyle.shadowOffsetX || 4,
+                          activeStyle.shadowOffsetY || 4
+                        );
+                      }}
+                      className="w-12 bg-ai-darkest px-1 py-0.5 rounded border border-ai-border text-ai-textLight text-right"
+                    />
+                    <span className="text-ai-textMuted text-[10px]">px</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-ai-textMuted">Смещение X:</span>
+                    <input
+                      type="number"
+                      value={activeStyle.shadowOffsetX ?? 4}
+                      onChange={(e) => {
+                        const ox = parseInt(e.target.value) || 0;
+                        editor.setActiveStyle({ shadowOffsetX: ox });
+                        editor.selectionManager.applyShadow(
+                          activeStyle.shadowColor || '#000000',
+                          activeStyle.shadowBlur || 12,
+                          ox,
+                          activeStyle.shadowOffsetY || 4
+                        );
+                      }}
+                      className="w-11 bg-ai-darkest px-1 py-0.5 rounded border border-ai-border text-ai-textLight text-right"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-ai-textMuted">Смещение Y:</span>
+                    <input
+                      type="number"
+                      value={activeStyle.shadowOffsetY ?? 4}
+                      onChange={(e) => {
+                        const oy = parseInt(e.target.value) || 0;
+                        editor.setActiveStyle({ shadowOffsetY: oy });
+                        editor.selectionManager.applyShadow(
+                          activeStyle.shadowColor || '#000000',
+                          activeStyle.shadowBlur || 12,
+                          activeStyle.shadowOffsetX || 4,
+                          oy
+                        );
+                      }}
+                      className="w-11 bg-ai-darkest px-1 py-0.5 rounded border border-ai-border text-ai-textLight text-right"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

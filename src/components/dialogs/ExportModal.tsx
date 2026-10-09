@@ -9,12 +9,12 @@ interface ExportModalProps {
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, editor }) => {
-  if (!isOpen || !editor) return null;
-
   const [format, setFormat] = useState<'svg' | 'png'>('svg');
   const [pngScale, setPngScale] = useState<number>(1);
   const [copied, setCopied] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  if (!isOpen || !editor) return null;
 
   const artboard = editor.viewport.getArtboard();
   const svgContent = editor.exportSVG();
