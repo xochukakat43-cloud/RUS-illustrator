@@ -144,7 +144,13 @@ export const TopControlBar: React.FC<TopControlBarProps> = ({
             <span className="hidden md:inline text-[11px]">Новый</span>
           </button>
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              if (window.electronAPI?.isElectron) {
+                editor.openProjectFile();
+              } else {
+                fileInputRef.current?.click();
+              }
+            }}
             title="Открыть проект (.json)"
             className="p-1.5 hover:bg-ai-hover rounded text-ai-textMuted hover:text-ai-textLight flex items-center gap-1"
           >

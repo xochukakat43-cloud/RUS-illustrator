@@ -33,6 +33,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, edito
     setIsExporting(true);
     try {
       if (format === 'svg') {
+        if (window.electronAPI?.isElectron) {
+          await window.electronAPI.exportFileDialog({
+            base64Data: svgContent,
+            defaultName: `${artboard.name || 'illustration'}.svg`,
+            extension: 'svg',
+          });
+          onClose();
+          return;
+        }
         const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -42,6 +51,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, edito
         URL.revokeObjectURL(url);
       } else {
         const dataUrl = await editor.exportPNG(pngScale);
+        if (window.electronAPI?.isElectron) {
+          await window.electronAPI.exportFileDialog({
+            base64Data: dataUrl,
+            defaultName: `${artboard.name || 'illustration'}@${pngScale}x.png`,
+            extension: 'png',
+          });
+          onClose();
+          return;
+        }
         const a = document.createElement('a');
         a.href = dataUrl;
         a.download = `${artboard.name || 'illustration'}@${pngScale}x.png`;

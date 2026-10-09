@@ -643,9 +643,31 @@ export class Editor {
     return Exporter.exportPNG(this.scope, this.viewport.getArtboard(), scale);
   }
 
-  public saveProjectFile(): void {
+  public async saveProjectFile(): Promise<void> {
     const json = Serializer.serialize(this.viewport.getArtboard(), this.mainLayer);
-    Exporter.downloadFile(json, `${this.viewport.getArtboard().name}.ai.json`, 'application/json');
+    const fileName = `${this.viewport.getArtboard().name}.ai.json`;
+    if (window.electronAPI?.isElectron) {
+      await window.electronAPI.saveFileDialog({
+        content: json,
+        defaultName: fileName,
+        extension: 'ai.json',
+      });
+      return;
+    }
+    Exporter.downloadFile(json, fileName, 'application/json');
+  }
+
+  public async openProjectFile(): Promise<void> {
+    if (window.electronAPI?.isElectron) {
+      const result = await window.electronAPI.openFileDialog();
+      if (result?.content) {
+        if (result.fileName.toLowerCase().endsWith('.svg')) {
+          this.importSVGString(result.content);
+        } else {
+          this.loadProjectFile(result.content);
+        }
+      }
+    }
   }
 
   public loadProjectFile(jsonString: string): void {

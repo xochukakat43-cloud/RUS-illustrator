@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useEditor } from './hooks/useEditor';
 import { TopControlBar } from './components/controlbar/TopControlBar';
 import { LeftToolbar } from './components/toolbar/LeftToolbar';
@@ -38,6 +38,63 @@ export function App() {
   // Modals state
   const [colorPickerTarget, setColorPickerTarget] = useState<'fill' | 'stroke' | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  // Listen to Electron native application menu actions
+  useEffect(() => {
+    if (!window.electronAPI?.onMenuAction || !editor) return;
+
+    const unsubscribe = window.electronAPI.onMenuAction((action) => {
+      switch (action) {
+        case 'new':
+          if (window.confirm('Создать новый документ? Все несохраненные изменения будут сброшены.')) {
+            editor.getMainLayer().removeChildren();
+            editor.history.clear();
+            editor.history.pushState();
+          }
+          break;
+        case 'open':
+          editor.openProjectFile();
+          break;
+        case 'save':
+          editor.saveProjectFile();
+          break;
+        case 'export':
+          setIsExportModalOpen(true);
+          break;
+        case 'undo':
+          editor.history.undo();
+          break;
+        case 'redo':
+          editor.history.redo();
+          break;
+        case 'toggle-rulers':
+          toggleRulers();
+          break;
+        case 'toggle-smart-guides':
+          toggleSmartGuides();
+          break;
+        case 'toggle-guides':
+          toggleGuides();
+          break;
+        case 'toggle-grid':
+          toggleGrid();
+          break;
+        case 'fit-artboard':
+          editor.viewport.fitArtboard();
+          break;
+        case 'zoom-in':
+          editor.viewport.zoomIn();
+          break;
+        case 'zoom-out':
+          editor.viewport.zoomOut();
+          break;
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [editor, toggleRulers, toggleSmartGuides, toggleGuides, toggleGrid]);
 
   const handleOpenColorPicker = (type: 'fill' | 'stroke') => {
     setColorPickerTarget(type);
